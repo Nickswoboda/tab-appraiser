@@ -1,0 +1,7 @@
+.vs/
+Debug/
+Release/
+tab-appraiser/Debug/
+tab-appraiser/Release/
+
+*.user
