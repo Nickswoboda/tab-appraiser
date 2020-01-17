@@ -87,12 +87,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)vendor\curl-7.68.0\x32 Debug\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)vendor\GLAD\include;$(ProjectDir)vendor\GLFW\include;$(ProjectDir)vendor\nlohmann;$(ProjectDir)vendor\imgui;$(ProjectDir)vendor\GLAD\include;$(ProjectDir)vendor\curl-7.68.0\x32 Debug\include;%(AdditionalIncludeDirectories);</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(ProjectDir)vendor\curl-7.68.0\x32 Debug\lib\libcurl_a_debug.lib;Normaliz.lib;Ws2_32.lib;Wldap32.lib;Crypt32.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(ProjectDir)vendor\curl-7.68.0\x32 Debug\lib\libcurl_a_debug.lib;Normaliz.lib;Ws2_32.lib;Wldap32.lib;Crypt32.lib;advapi32.lib;%(AdditionalDependencies);glfw3.lib;opengl32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\dev\tab-appraiser\tab-appraiser\vendor\GLFW\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -101,12 +103,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)vendor\curl-7.68.0\x64 Debug\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)vendor\GLAD\include;$(ProjectDir)vendor\GLFW\include;$(ProjectDir)vendor\nlohmann;$(ProjectDir)vendor\imgui;$(ProjectDir)vendor\GLAD\include$(ProjectDir)vendor\curl-7.68.0\x64 Debug\include;%(AdditionalIncludeDirectories);$(ProjectDir)dependencies\GLFW\include;$(ProjectDir)dependencies\nlohmann;$(ProjectDir)dependencies\imgui;$(ProjectDir)dependencies\GLAD\include</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(ProjectDir)vendor\curl-7.68.0\x64 Debug\lib\libcurl_a_debug.lib;Normaliz.lib;Ws2_32.lib;Wldap32.lib;Crypt32.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(ProjectDir)vendor\curl-7.68.0\x64 Debug\lib\libcurl_a_debug.lib;Normaliz.lib;Ws2_32.lib;Wldap32.lib;Crypt32.lib;advapi32.lib;%(AdditionalDependencies);glfw3.lib;opengl32.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -117,14 +120,15 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)vendor\curl-7.68.0\x32 Release\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)vendor\GLAD\include;$(ProjectDir)vendor\GLFW\include;$(ProjectDir)vendor\nlohmann;$(ProjectDir)vendor\imgui;$(ProjectDir)vendor\GLAD\include;$(ProjectDir)vendor\curl-7.68.0\x32 Release\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(ProjectDir)vendor\curl-7.68.0\x32 Release\lib\libcurl_a.lib;Normaliz.lib;Ws2_32.lib;Wldap32.lib;Crypt32.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(ProjectDir)vendor\curl-7.68.0\x32 Release\lib\libcurl_a.lib;Normaliz.lib;Ws2_32.lib;Wldap32.lib;Crypt32.lib;advapi32.lib;%(AdditionalDependencies);glfw3.lib;opengl32.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -135,18 +139,43 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)vendor\curl-7.68.0\x64 Release\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)vendor\GLAD\include;$(ProjectDir)vendor\GLFW\include;$(ProjectDir)vendor\nlohmann;$(ProjectDir)vendor\imgui;$(ProjectDir)vendor\GLAD\include;$(ProjectDir)vendor\curl-7.68.0\x64 Release\include;%(AdditionalIncludeDirectories);$(ProjectDir)dependencies\GLFW\include;$(ProjectDir)dependencies\nlohmann;$(ProjectDir)dependencies\imgui;$(ProjectDir)dependencies\GLAD\include</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(ProjectDir)vendor\curl-7.68.0\x64 Release\lib\libcurl_a.lib;Normaliz.lib;Ws2_32.lib;Wldap32.lib;Crypt32.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(ProjectDir)vendor\curl-7.68.0\x64 Release\lib\libcurl_a.lib;Normaliz.lib;Ws2_32.lib;Wldap32.lib;Crypt32.lib;advapi32.lib;%(AdditionalDependencies);glfw3.lib;opengl32.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Application.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\Http.cpp" />
+    <ClCompile Include="src\Window.cpp" />
+    <ClCompile Include="vendor\GLAD\src\glad.c" />
+    <ClCompile Include="vendor\imgui\imgui.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_demo.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_draw.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_impl_glfw.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_widgets.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\Application.h" />
+    <ClInclude Include="src\Http.h" />
+    <ClInclude Include="src\Window.h" />
+    <ClInclude Include="vendor\GLAD\include\glad\glad.h" />
+    <ClInclude Include="vendor\imgui\imconfig.h" />
+    <ClInclude Include="vendor\imgui\imgui.h" />
+    <ClInclude Include="vendor\imgui\imgui_impl_glfw.h" />
+    <ClInclude Include="vendor\imgui\imgui_impl_opengl3.h" />
+    <ClInclude Include="vendor\imgui\imgui_internal.h" />
+    <ClInclude Include="vendor\imgui\imstb_rectpack.h" />
+    <ClInclude Include="vendor\imgui\imstb_textedit.h" />
+    <ClInclude Include="vendor\imgui\imstb_truetype.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
