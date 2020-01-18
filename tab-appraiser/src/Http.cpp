@@ -4,7 +4,7 @@ Http::Http()
 {
 	curl_global_init(CURL_GLOBAL_DEFAULT);
 	curl = curl_easy_init();
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, Http::WriteToJson);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, Http::WriteToString);
 }
 
 Http::~Http()
@@ -13,7 +13,7 @@ Http::~Http()
 	curl_global_cleanup();
 }
 
-size_t Http::WriteToJson(void* buffer, size_t size, size_t nmemb, void* userdata)
+size_t Http::WriteToString(void* buffer, size_t size, size_t nmemb, void* userdata)
 {
 	std::string& text = *static_cast<std::string*>(userdata);
 	size_t totalsize = size * nmemb;
@@ -21,7 +21,7 @@ size_t Http::WriteToJson(void* buffer, size_t size, size_t nmemb, void* userdata
 	return totalsize;
 }
 
-nlohmann::json Http::Get(const std::string& url)
+nlohmann::json Http::GetJson(const std::string& url)
 {
 	std::string result;
 	
@@ -31,4 +31,17 @@ nlohmann::json Http::Get(const std::string& url)
 	int success = curl_easy_perform(curl);
 	auto json = nlohmann::json::parse(result);
 	return json;
+}
+
+std::string Http::GetString(const std::string& url)
+{
+	std::string result;
+
+	curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &result);
+	curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+	curl_easy_setopt(curl, CURLOPT_COOKIE, "POESESSID=475c8b5472c42341cf40f87e2f0cb75f");
+	int success = curl_easy_perform(curl);
+
+	return result;
 }

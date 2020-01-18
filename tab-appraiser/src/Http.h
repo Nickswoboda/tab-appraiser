@@ -11,10 +11,11 @@ public:
 	Http();
 	~Http();
 
-	nlohmann::json Get(const std::string& url);
+	nlohmann::json GetJson(const std::string& url);
+	std::string GetString(const std::string& url);
 
 private:
 	CURL* curl;
 
-	static size_t WriteToJson(void* buffer, size_t size, size_t nmemb, void* userdata);
+	static size_t WriteToString(void* buffer, size_t size, size_t nmemb, void* userdata);
 };
