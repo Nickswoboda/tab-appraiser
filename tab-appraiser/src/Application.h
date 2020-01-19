@@ -15,18 +15,10 @@ public:
 	void SetImGuiStyle();
 
 	void Run();
+	void Render();
 
 private:
 	bool running_ = true;
-
-	std::string error_message_;
-
-	int font_size_= 16;
-	bool font_size_changed_ = false;
-
-	bool all_ears_enabled_ = true;
-	bool no_stone_unturned_enabled_ = true;
-	int tutorial_page_ = 1;
 
 	Window window_;
 };

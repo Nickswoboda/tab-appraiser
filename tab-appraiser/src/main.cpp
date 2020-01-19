@@ -2,11 +2,17 @@
 #include "Application.h"
 
 #include <iostream>
+#include <vector>
 
 //currencyoverview
 //-Currency
 //-Fragments
 
+struct AccountData 
+{
+	std::string account_name_;
+	std::vector<std::string> leagues_;
+};
 class PoeNinjaQuery 
 {
 public:
@@ -20,10 +26,30 @@ public:
 		return url + overview + "overview?league=" + league + "&type=" + itemtype;
 	}
 };
+
+std::string GetAccountName(std::string& data)
+{
+	std::string temp = "/account/view-profile/";
+	const int temp_length = 22;
+
+	auto temp_pos = data.find(temp);
+	if (temp_pos != std::string::npos) {
+		auto substring = data.substr(temp_pos + temp_length, 100);
+		
+		std::string acc_name;
+		for (auto& character : substring) {
+			if (character == '\"') {
+				return acc_name;
+			}
+			acc_name += character;
+		}
+	}
+	return "Unable to find account name";
+}
+
 int main()
 {
 
-	
 	PoeNinjaQuery query;
 	query.overview = "item";
 	query.league = "Metamorph";
@@ -42,10 +68,20 @@ int main()
 	//		std::cout << currency["chaosValue"] << "\n";
 	//	}
 	//}
-
+	AccountData accnt_data;
 	auto result = http.GetString("https://www.pathofexile.com/my-account");
-	std::cout << result;
+	accnt_data.account_name_ = GetAccountName(result);
+	
+	auto league_info = http.GetJson("http://api.pathofexile.com/leagues");
+	for (const auto& league : league_info) {
+		accnt_data.leagues_.push_back(league["id"]);
+	}
 
+	std::cout << "Account Name: " << accnt_data.account_name_ << "\n";
+	std::cout << "Current Leagues: ";
+	for (const auto& league : accnt_data.leagues_) {
+		std::cout << league << ", ";
+	}
 
 	Application app(400,400);
 	app.Run();

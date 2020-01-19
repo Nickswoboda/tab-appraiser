@@ -40,7 +40,7 @@ std::string Http::GetString(const std::string& url)
 	curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &result);
 	curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-	curl_easy_setopt(curl, CURLOPT_COOKIE, "POESESSID=475c8b5472c42341cf40f87e2f0cb75f");
+	curl_easy_setopt(curl, CURLOPT_COOKIE, "POESESSID=782aec31fda7f6d5a4fd8411e83a05a6");
 	int success = curl_easy_perform(curl);
 
 	return result;
