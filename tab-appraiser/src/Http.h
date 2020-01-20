@@ -11,8 +11,8 @@ public:
 	Http();
 	~Http();
 
-	nlohmann::json GetJson(const std::string& url);
-	std::string GetString(const std::string& url);
+	std::string GetData(const std::string& url);
+	void SetCookie(const std::string& cookie);
 
 private:
 	CURL* curl;

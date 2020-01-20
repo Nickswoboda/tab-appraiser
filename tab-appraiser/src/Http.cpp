@@ -21,27 +21,19 @@ size_t Http::WriteToString(void* buffer, size_t size, size_t nmemb, void* userda
 	return totalsize;
 }
 
-nlohmann::json Http::GetJson(const std::string& url)
-{
-	std::string result;
-	
-	curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &result);
-	curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-	int success = curl_easy_perform(curl);
-	auto json = nlohmann::json::parse(result);
-	return json;
-}
-
-std::string Http::GetString(const std::string& url)
+std::string Http::GetData(const std::string& url)
 {
 	std::string result;
 
 	curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &result);
 	curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-	curl_easy_setopt(curl, CURLOPT_COOKIE, "POESESSID=782aec31fda7f6d5a4fd8411e83a05a6");
 	int success = curl_easy_perform(curl);
 
 	return result;
+}
+
+void Http::SetCookie(const std::string& cookie)
+{
+	curl_easy_setopt(curl, CURLOPT_COOKIE, cookie.c_str());
 }

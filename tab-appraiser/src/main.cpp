@@ -4,15 +4,6 @@
 #include <iostream>
 #include <vector>
 
-//currencyoverview
-//-Currency
-//-Fragments
-
-struct AccountData 
-{
-	std::string account_name_;
-	std::vector<std::string> leagues_;
-};
 class PoeNinjaQuery 
 {
 public:
@@ -27,24 +18,32 @@ public:
 	}
 };
 
-std::string GetAccountName(std::string& data)
+std::vector<std::string> GetStashTabList(nlohmann::json& data)
 {
-	std::string temp = "/account/view-profile/";
-	const int temp_length = 22;
+	std::vector<std::string> tab_list;
+	for (const auto& tab : data) {
+		tab_list.push_back(tab["n"]);
+	}
 
-	auto temp_pos = data.find(temp);
-	if (temp_pos != std::string::npos) {
-		auto substring = data.substr(temp_pos + temp_length, 100);
-		
-		std::string acc_name;
-		for (auto& character : substring) {
-			if (character == '\"') {
-				return acc_name;
-			}
-			acc_name += character;
+	return tab_list;
+}
+
+std::vector<std::string> GetItemList(nlohmann::json& data)
+{
+	std::vector<std::string> item_list;
+	for (const auto& item : data) {
+		if (item["identified"] == false) {
+			continue;
+		}
+		if (item["name"] != "") {
+			item_list.push_back(item["name"]);
+		}
+		else {
+			item_list.push_back(item["typeLine"]);
 		}
 	}
-	return "Unable to find account name";
+
+	return item_list;
 }
 
 int main()
@@ -55,33 +54,36 @@ int main()
 	query.league = "Metamorph";
 	query.itemtype = "Prophecy";
 	Http http;
-	//auto result = http.GetJson(query.Get());
-	//
-	//if (query.overview == "currency")
-	//	for (auto& currency : result["lines"]) {
-	//		std::cout << currency["currencyTypeName"] << "  ";
-	//		std::cout << currency["chaosEquivalent"] << "\n";
-	//	}
-	//else {
-	//	for (auto& currency : result["lines"]) {
-	//		std::cout << currency["name"] << "  ";
-	//		std::cout << currency["chaosValue"] << "\n";
-	//	}
-	//}
-	AccountData accnt_data;
-	auto result = http.GetString("https://www.pathofexile.com/my-account");
-	accnt_data.account_name_ = GetAccountName(result);
+	http.SetCookie("");
+	auto result = http.GetData(query.Get());
+	auto json = nlohmann::json::parse(result);
 	
-	auto league_info = http.GetJson("http://api.pathofexile.com/leagues");
-	for (const auto& league : league_info) {
-		accnt_data.leagues_.push_back(league["id"]);
+	if (query.overview == "currency")
+		for (auto& currency : json["lines"]) {
+			std::cout << currency["currencyTypeName"] << "  ";
+			std::cout << currency["chaosEquivalent"] << "\n";
+		}
+	else {
+		for (auto& currency : json["lines"]) {
+			std::cout << currency["name"] << "  ";
+			std::cout << currency["chaosValue"] << "\n";
+		}
 	}
 
-	std::cout << "Account Name: " << accnt_data.account_name_ << "\n";
-	std::cout << "Current Leagues: ";
-	for (const auto& league : accnt_data.leagues_) {
-		std::cout << league << ", ";
-	}
+	//auto stash_tab_info = http.GetJson("https://www.pathofexile.com/character-window/get-stash-items?accountName=" + user_data.account_name_ + "&realm=pc&league=Hardcore%20Metamorph&tabs=1&tabIndex=0");
+	//auto stash_tab_list = GetStashTabList(stash_tab_info["tabs"]);
+	//
+	//for (const auto& tab : stash_tab_list) {
+	//	std::cout << tab << ", ";
+	//}
+	//std::cout << "\n";
+	//
+	//auto item_info = http.GetJson("https://www.pathofexile.com/character-window/get-stash-items?accountName=" + user_data.account_name_ + "&realm=pc&league=Hardcore%20Metamorph&tabs=0&tabIndex=27");
+	//auto item_list = GetItemList(item_info["items"]);
+	//
+	//for (const auto& item : item_list) {
+	//	std::cout << item << "\n";
+	//}
 
 	Application app(400,400);
 	app.Run();

@@ -151,6 +151,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\ApiHandler.cpp" />
     <ClCompile Include="src\Application.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Http.cpp" />
@@ -164,8 +165,10 @@
     <ClCompile Include="vendor\imgui\imgui_widgets.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\ApiHandler.h" />
     <ClInclude Include="src\Application.h" />
     <ClInclude Include="src\Http.h" />
+    <ClInclude Include="src\UserData.h" />
     <ClInclude Include="src\Window.h" />
     <ClInclude Include="vendor\GLAD\include\glad\glad.h" />
     <ClInclude Include="vendor\imgui\imconfig.h" />

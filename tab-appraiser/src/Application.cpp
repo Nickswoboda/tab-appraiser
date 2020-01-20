@@ -10,8 +10,9 @@
 #include <iostream>
 
 Application::Application(int width, int height)
-	:window_(width, height)
+	:window_(width, height), api_handler_(user_)
 {
+	current_leagues_ = api_handler_.GetCurrentLeagues();
 	if (!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress))) {
 		std::cout << "could not load GLAD";
 	}
@@ -65,7 +66,17 @@ void Application::Render()
 
 	ImGui::NewFrame();
 	ImGui::Begin("Window");
-	ImGui::Text("test");
+
+	switch (state_) {
+		case State::Get_POESESSID:
+			ImGui::Text("Please Enter Your POESESSID");
+			static char sess_id_input[100];
+			ImGui::InputText("##Input", sess_id_input, 100);
+			
+			if (ImGui::Button("OK")){
+				SetPOESESSID(sess_id_input);
+			}
+	}
 
 
 	ImVec2 pos = ImGui::GetWindowPos();
@@ -93,6 +104,21 @@ void Application::SetImGuiStyle()
 	style->Colors[ImGuiCol_TitleBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.2f);
 	style->Colors[ImGuiCol_TitleBgActive] = ImVec4(0.0f, 0.0f, 0.0f, 0.8f);
 	style->Colors[ImGuiCol_WindowBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.8f);
+}
+
+void Application::SetPOESESSID(const char* id)
+{
+	user_.POESESSID_ = id;
+	user_.account_name_ = api_handler_.GetAccountName();
+	
+	std::cout << user_.account_name_ << "\n";
+
+	std::cout << "Current Leagues: ";
+	for (const auto& league : current_leagues_) {
+		std::cout << league << ", ";
+	}
+	std::cout << "\n";
+	
 }
 
 
