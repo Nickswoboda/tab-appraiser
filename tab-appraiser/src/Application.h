@@ -13,7 +13,9 @@ public:
 	enum class State
 	{
 		Get_POESESSID,
-		LeagueSelection
+		LeagueSelection,
+		StashTabList,
+		ItemList
 	};
 
 	Application(int width, int height);
@@ -28,6 +30,8 @@ public:
 private:
 	bool running_ = true;
 	std::vector<std::string> current_leagues_;
+	std::vector<std::string> stash_items_;
+	int selected_stash_index_;
 
 	UserData user_;
 	State state_;

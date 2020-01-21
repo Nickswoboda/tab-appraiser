@@ -75,7 +75,82 @@ void Application::Render()
 			
 			if (ImGui::Button("OK")){
 				SetPOESESSID(sess_id_input);
+				state_ = State::LeagueSelection;
 			}
+			break;
+
+		case State::LeagueSelection:
+		{
+			ImGui::Text(user_.account_name_.c_str());
+			ImGui::Text("Select a league");
+
+			static auto combo_selection = current_leagues_[0];
+			if (ImGui::BeginCombo("Leagues: ", combo_selection.c_str())) {
+				for (auto& league : current_leagues_) {
+					if (ImGui::Selectable(league.c_str())) {
+						combo_selection = league;
+					}
+				}
+				//selectable popup does not close if user clicks out of window and loses focus
+				//must do manually
+				if (!Window::IsFocused()) {
+					ImGui::CloseCurrentPopup();
+				}
+				ImGui::EndCombo();
+			}
+
+			if (ImGui::Button("Ok")) {
+				user_.selected_league_ = combo_selection;
+				user_.stash_tab_list_ = api_handler_.GetStashTabList();
+				state_ = State::StashTabList;
+			}
+			break;
+		}
+		case State::StashTabList:
+		{
+			ImGui::Text(user_.account_name_.c_str());
+			ImGui::Text(user_.selected_league_.c_str());
+
+			static auto combo_selection = user_.stash_tab_list_[0];
+			static int selection_index = 0;
+			if (ImGui::BeginCombo("Tabs: ", combo_selection.c_str())) {
+				for (int i = 0; i < user_.stash_tab_list_.size(); i++) {
+					if (ImGui::Selectable(user_.stash_tab_list_[i].c_str())) {
+						combo_selection = user_.stash_tab_list_[i];
+						selection_index = i;
+					}
+				}
+				//selectable popup does not close if user clicks out of window and loses focus
+				//must do manually
+				if (!Window::IsFocused()) {
+					ImGui::CloseCurrentPopup();
+				}
+				ImGui::EndCombo();
+			}
+
+			if (ImGui::Button("Ok")) {
+				selected_stash_index_ = selection_index;
+				stash_items_ = api_handler_.GetStashItems(selected_stash_index_);
+				state_ = State::ItemList;
+			}
+			break;
+		}
+		case State::ItemList:
+		{
+			ImGui::Text(user_.account_name_.c_str());
+			ImGui::Text(user_.selected_league_.c_str());
+			ImGui::Text(user_.stash_tab_list_[selected_stash_index_].c_str());
+
+			for (const auto item : stash_items_) {
+				ImGui::Text(item.c_str());
+			}
+
+			if (ImGui::Button("Back")) {
+				state_ = State::StashTabList;
+			}
+			break;
+		}
+			
 	}
 
 

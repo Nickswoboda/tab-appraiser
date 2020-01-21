@@ -39,3 +39,38 @@ std::vector<std::string> ApiHandler::GetCurrentLeagues()
 
 	return leagues;
 }
+
+std::vector<std::string> ApiHandler::GetStashTabList()
+{
+	auto data = http_.GetData("https://www.pathofexile.com/character-window/get-stash-items?accountName=" + user_.account_name_ + "&realm=pc&league=" + user_.selected_league_ + "&tabs=1&tabIndex=0");
+	auto json = nlohmann::json::parse(data);
+
+	std::vector<std::string> tab_list;
+	for (const auto& tab : json["tabs"]) {
+		tab_list.push_back(tab["n"]);
+	}
+
+	return tab_list;
+
+}
+
+std::vector<std::string> ApiHandler::GetStashItems(int index)
+{
+	auto data = http_.GetData("https://www.pathofexile.com/character-window/get-stash-items?accountName=" + user_.account_name_ + "&realm=pc&league=" + user_.selected_league_ + "&tabs=0&tabIndex=" + std::to_string(index));
+	auto json = nlohmann::json::parse(data);
+
+	std::vector<std::string> item_list;
+	for (const auto& item : json["items"]) {
+		if (item["identified"] == false) {
+			continue;
+		}
+		if (item["name"] != "") {
+			item_list.push_back(item["name"]);
+		}
+		else {
+			item_list.push_back(item["typeLine"]);
+		}
+	}
+
+	return item_list;
+}
