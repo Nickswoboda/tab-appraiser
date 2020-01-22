@@ -2,9 +2,10 @@
 
 #include "UserData.h"
 #include "Http.h"
+
 #include <string>
 #include <vector>
-
+#include <unordered_map>
 class ApiHandler
 {
 public:
@@ -15,6 +16,7 @@ public:
 	std::vector<std::string> GetCurrentLeagues();
 	std::vector<std::string> GetStashTabList();
 	std::vector<std::string> GetStashItems(int index);
+	std::unordered_map<std::string, float> GetPriceData();
 
 	Http http_;
 	UserData& user_;

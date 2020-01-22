@@ -12,6 +12,7 @@
 Application::Application(int width, int height)
 	:window_(width, height), api_handler_(user_)
 {
+	api_handler_.http_.SetVerbose(true);
 	current_leagues_ = api_handler_.GetCurrentLeagues();
 	if (!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress))) {
 		std::cout << "could not load GLAD";
@@ -131,6 +132,7 @@ void Application::Render()
 			if (ImGui::Button("Ok")) {
 				selected_stash_index_ = selection_index;
 				stash_items_ = api_handler_.GetStashItems(selected_stash_index_);
+				price_data_ = GetItemPrices();
 				state_ = State::ItemList;
 			}
 			break;
@@ -141,8 +143,10 @@ void Application::Render()
 			ImGui::Text(user_.selected_league_.c_str());
 			ImGui::Text(user_.stash_tab_list_[selected_stash_index_].c_str());
 
-			for (const auto item : stash_items_) {
-				ImGui::Text(item.c_str());
+			for (const auto& item : price_data_) {
+				ImGui::Text(item.first.c_str());
+				ImGui::SameLine();
+				ImGui::Text(std::to_string(item.second).c_str());
 			}
 
 			if (ImGui::Button("Back")) {
@@ -152,7 +156,6 @@ void Application::Render()
 		}
 			
 	}
-
 
 	ImVec2 pos = ImGui::GetWindowPos();
 	if (pos.x != 0.0f || pos.y != 0.0f) {
@@ -194,6 +197,20 @@ void Application::SetPOESESSID(const char* id)
 	}
 	std::cout << "\n";
 	
+}
+
+std::unordered_map<std::string, float> Application::GetItemPrices()
+{
+	auto price_data = api_handler_.GetPriceData();
+	std::unordered_map<std::string, float> item_price;
+
+	for (const auto& item : stash_items_) {
+		if (price_data.count(item)) {
+			item_price[item] = price_data[item];
+		}
+	}
+
+	return item_price;
 }
 
 

@@ -27,7 +27,6 @@ std::string Http::GetData(const std::string& url)
 
 	curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &result);
-	curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 	int success = curl_easy_perform(curl);
 
 	return result;
@@ -36,4 +35,9 @@ std::string Http::GetData(const std::string& url)
 void Http::SetCookie(const std::string& cookie)
 {
 	curl_easy_setopt(curl, CURLOPT_COOKIE, cookie.c_str());
+}
+
+void Http::SetVerbose(bool verbose)
+{
+	curl_easy_setopt(curl, CURLOPT_VERBOSE, verbose);
 }

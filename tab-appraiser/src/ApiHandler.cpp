@@ -74,3 +74,35 @@ std::vector<std::string> ApiHandler::GetStashItems(int index)
 
 	return item_list;
 }
+
+std::unordered_map<std::string, float> ApiHandler::GetPriceData()
+{
+	std::string base_url = "https://poe.ninja/api/data/";
+	std::array<std::string, 2> currencies = { "Currency", "Fragment" };
+	std::array<std::string, 20> items = { "Watchstone", "Oil", "Incubator", 
+											"Scarab", "Fossil", "Resonator", 
+											"Essence", "DivinationCard", "Prophecy", 
+											"SkillGem", "BaseType", "HelmetEnchant", 
+											"UniqueMap", "Map", "UniqueJewel", 
+											"UniqueFlask", "UniqueWeapon", "UniqueArmour", 
+											"UniqueAccessory", "Beast" };
+
+	
+	std::unordered_map<std::string, float> price_data;
+	for (const auto& currency : currencies) {
+		auto data = http_.GetData(base_url + "currencyoverview?league=" + user_.selected_league_ + "&type=" + currency);
+		auto json = nlohmann::json::parse(data);
+		for (const auto& line : json["lines"]){
+			price_data[line["currencyTypeName"]] = line["chaosEquivalent"];
+		}
+	}
+	for (const auto& item : items) {
+		auto data = http_.GetData(base_url + "itemoverview?league=" + user_.selected_league_ + "&type=" + item);
+		auto json = nlohmann::json::parse(data);
+	
+		for (const auto& line : json["lines"]) {
+			price_data[line["name"]] = line["chaosValue"];
+		}
+	}
+	return price_data;
+}

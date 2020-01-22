@@ -13,7 +13,7 @@ public:
 
 	std::string GetData(const std::string& url);
 	void SetCookie(const std::string& cookie);
-
+	void SetVerbose(bool verbose);
 private:
 	CURL* curl;
 
