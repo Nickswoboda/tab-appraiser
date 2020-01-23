@@ -3,6 +3,7 @@ Debug/
 Release/
 tab-appraiser/Debug/
 tab-appraiser/Release/
+tab-appraiser/PriceData/
 
 *.user
 *.ini

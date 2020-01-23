@@ -1,5 +1,8 @@
 #include "ApiHandler.h"
 
+#include <fstream>
+#include <iomanip>
+#include <filesystem>
 void ApiHandler::SetPOESESSIDCookie()
 {
 	http_.SetCookie("POESESSID=" + user_.POESESSID_);
@@ -34,7 +37,10 @@ std::vector<std::string> ApiHandler::GetCurrentLeagues()
 	auto league_info = nlohmann::json::parse(data);
 	std::vector<std::string> leagues;
 	for (const auto& league : league_info) {
-		leagues.push_back(league["id"]);
+		std::string league_name = league["id"];
+		if (league_name.find("SSF") == std::string::npos) {
+			leagues.push_back(league["id"]);
+		}
 	}
 
 	return leagues;
@@ -75,7 +81,7 @@ std::vector<std::string> ApiHandler::GetStashItems(int index)
 	return item_list;
 }
 
-std::unordered_map<std::string, float> ApiHandler::GetPriceData()
+std::unordered_map<std::string, float> ApiHandler::GetPriceData(const std::string& league)
 {
 	std::string base_url = "https://poe.ninja/api/data/";
 	std::array<std::string, 2> currencies = { "Currency", "Fragment" };
@@ -87,22 +93,48 @@ std::unordered_map<std::string, float> ApiHandler::GetPriceData()
 											"UniqueFlask", "UniqueWeapon", "UniqueArmour", 
 											"UniqueAccessory", "Beast" };
 
-	
 	std::unordered_map<std::string, float> price_data;
-	for (const auto& currency : currencies) {
-		auto data = http_.GetData(base_url + "currencyoverview?league=" + user_.selected_league_ + "&type=" + currency);
-		auto json = nlohmann::json::parse(data);
-		for (const auto& line : json["lines"]){
-			price_data[line["currencyTypeName"]] = line["chaosEquivalent"];
-		}
+
+	if (!std::filesystem::exists("PriceData/" + league)) {
+		std::filesystem::create_directories("PriceData/" + league);
 	}
-	for (const auto& item : items) {
-		auto data = http_.GetData(base_url + "itemoverview?league=" + user_.selected_league_ + "&type=" + item);
+	auto league_encoded = league;
+	if (league_encoded.find(" ") != std::string::npos) {
+		league_encoded.replace(league.find(" "), 1, "%20");
+	}
+
+	for (const auto& currency : currencies) {
+
+		std::ofstream file("PriceData/" + league + std::string("/") + currency + ".json");
+		nlohmann::json json_file;
+
+
+		auto data = http_.GetData(base_url + "currencyoverview?league=" + league_encoded + "&type=" + currency);
 		auto json = nlohmann::json::parse(data);
+
+		for (const auto& line : json["lines"]){
+			std::string item = line["currencyTypeName"];
+			float price = line["chaosEquivalent"];
+			json_file[item] = price;
+			
+		}
+		file << std::setw(4) << json_file << std::endl;
+	}
+
+	for (const auto& item : items) {
+		auto data = http_.GetData(base_url + "itemoverview?league=" + league_encoded + "&type=" + item);
+		auto json = nlohmann::json::parse(data);
+
+		std::ofstream file("PriceData/" + league + std::string("/") + item + ".json");
+		nlohmann::json json_file;
 	
 		for (const auto& line : json["lines"]) {
-			price_data[line["name"]] = line["chaosValue"];
+			std::string item = line["name"];
+			float price = line["chaosValue"];
+			json_file[item] = price;
 		}
+
+		file << std::setw(4) << json_file << std::endl;
 	}
 	return price_data;
 }

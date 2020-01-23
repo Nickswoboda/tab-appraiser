@@ -16,7 +16,7 @@ public:
 	std::vector<std::string> GetCurrentLeagues();
 	std::vector<std::string> GetStashTabList();
 	std::vector<std::string> GetStashItems(int index);
-	std::unordered_map<std::string, float> GetPriceData();
+	std::unordered_map<std::string, float> GetPriceData(const std::string& league);
 
 	Http http_;
 	UserData& user_;

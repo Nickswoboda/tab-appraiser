@@ -13,7 +13,6 @@ Application::Application(int width, int height)
 	:window_(width, height), api_handler_(user_)
 {
 	api_handler_.http_.SetVerbose(true);
-	current_leagues_ = api_handler_.GetCurrentLeagues();
 	if (!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress))) {
 		std::cout << "could not load GLAD";
 	}
@@ -28,6 +27,7 @@ Application::Application(int width, int height)
 	SetImGuiStyle();
 	
 	glfwSetWindowUserPointer(window_.glfw_window_, this);
+	Load();
 }
 
 Application::~Application()
@@ -172,6 +172,21 @@ void Application::Render()
 	glfwSwapBuffers(window_.glfw_window_);
 }
 
+void Application::Save()
+{
+
+}
+
+void Application::Load()
+{
+	current_leagues_ = api_handler_.GetCurrentLeagues();
+	for (const auto& league : current_leagues_) {
+		price_data_ = api_handler_.GetPriceData(league.c_str());
+	}
+
+
+}
+
 void Application::SetImGuiStyle()
 {
 	ImGuiStyle* style = &ImGui::GetStyle();
@@ -201,7 +216,7 @@ void Application::SetPOESESSID(const char* id)
 
 std::unordered_map<std::string, float> Application::GetItemPrices()
 {
-	auto price_data = api_handler_.GetPriceData();
+	auto price_data = api_handler_.GetPriceData(user_.selected_league_.c_str());
 	std::unordered_map<std::string, float> item_price;
 
 	for (const auto& item : stash_items_) {

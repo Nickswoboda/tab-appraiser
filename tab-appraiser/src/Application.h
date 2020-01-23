@@ -29,6 +29,9 @@ public:
 	void Run();
 	void Render();
 
+	void Save();
+	void Load();
+
 private:
 	bool running_ = true;
 	std::vector<std::string> current_leagues_;
