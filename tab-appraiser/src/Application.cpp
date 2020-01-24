@@ -183,8 +183,6 @@ void Application::Load()
 	for (const auto& league : current_leagues_) {
 		price_data_ = api_handler_.GetPriceData(league.c_str());
 	}
-
-
 }
 
 void Application::SetImGuiStyle()

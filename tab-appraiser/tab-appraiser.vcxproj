@@ -87,7 +87,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)vendor\GLAD\include;$(ProjectDir)vendor\GLFW\include;$(ProjectDir)vendor\nlohmann;$(ProjectDir)vendor\imgui;$(ProjectDir)vendor\GLAD\include;$(ProjectDir)vendor\curl-7.68.0\x32 Debug\include;%(AdditionalIncludeDirectories);</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)vendor\GLAD\include;$(ProjectDir)vendor\GLFW\include;$(ProjectDir)vendor\nlohmann;$(ProjectDir)vendor\imgui;$(ProjectDir)vendor\rapidjson\include;$(ProjectDir)vendor\GLAD\include;$(ProjectDir)vendor\curl-7.68.0\x32 Debug\include;%(AdditionalIncludeDirectories);</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -103,7 +103,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)vendor\GLAD\include;$(ProjectDir)vendor\GLFW\include;$(ProjectDir)vendor\nlohmann;$(ProjectDir)vendor\imgui;$(ProjectDir)vendor\GLAD\include$(ProjectDir)vendor\curl-7.68.0\x64 Debug\include;%(AdditionalIncludeDirectories);$(ProjectDir)dependencies\GLFW\include;$(ProjectDir)dependencies\nlohmann;$(ProjectDir)dependencies\imgui;$(ProjectDir)dependencies\GLAD\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)vendor\GLAD\include;$(ProjectDir)vendor\GLFW\include;$(ProjectDir)vendor\nlohmann;$(ProjectDir)vendor\imgui;$(ProjectDir)vendor\rapidjson\include;$(ProjectDir)vendor\GLAD\include$(ProjectDir)vendor\curl-7.68.0\x64 Debug\include;%(AdditionalIncludeDirectories);$(ProjectDir)dependencies\GLFW\include;$(ProjectDir)dependencies\nlohmann;$(ProjectDir)dependencies\imgui;$(ProjectDir)dependencies\GLAD\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -120,7 +120,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)vendor\GLAD\include;$(ProjectDir)vendor\GLFW\include;$(ProjectDir)vendor\nlohmann;$(ProjectDir)vendor\imgui;$(ProjectDir)vendor\GLAD\include;$(ProjectDir)vendor\curl-7.68.0\x32 Release\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)vendor\GLAD\include;$(ProjectDir)vendor\GLFW\include;$(ProjectDir)vendor\nlohmann;$(ProjectDir)vendor\imgui;$(ProjectDir)vendor\rapidjson\include;$(ProjectDir)vendor\GLAD\include;$(ProjectDir)vendor\curl-7.68.0\x32 Release\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -139,7 +139,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)vendor\GLAD\include;$(ProjectDir)vendor\GLFW\include;$(ProjectDir)vendor\nlohmann;$(ProjectDir)vendor\imgui;$(ProjectDir)vendor\GLAD\include;$(ProjectDir)vendor\curl-7.68.0\x64 Release\include;%(AdditionalIncludeDirectories);$(ProjectDir)dependencies\GLFW\include;$(ProjectDir)dependencies\nlohmann;$(ProjectDir)dependencies\imgui;$(ProjectDir)dependencies\GLAD\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)vendor\GLAD\include;$(ProjectDir)vendor\GLFW\include;$(ProjectDir)vendor\nlohmann;$(ProjectDir)vendor\imgui;$(ProjectDir)vendor\rapidjson\include;$(ProjectDir)vendor\GLAD\include;$(ProjectDir)vendor\curl-7.68.0\x64 Release\include;%(AdditionalIncludeDirectories);$(ProjectDir)dependencies\GLFW\include;$(ProjectDir)dependencies\nlohmann;$(ProjectDir)dependencies\imgui;$(ProjectDir)dependencies\GLAD\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>

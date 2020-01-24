@@ -1,8 +1,18 @@
+#define NOMINMAX
+#define RAPIDJSON_NOMEMBERITERATORCLASS
+
 #include "ApiHandler.h"
+
+#include <rapidjson/document.h>
+#include <rapidjson/filereadstream.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
 
 #include <fstream>
 #include <iomanip>
 #include <filesystem>
+#include <array>
+
 void ApiHandler::SetPOESESSIDCookie()
 {
 	http_.SetCookie("POESESSID=" + user_.POESESSID_);
@@ -34,12 +44,14 @@ std::string ApiHandler::GetAccountName()
 std::vector<std::string> ApiHandler::GetCurrentLeagues()
 {
 	auto data = http_.GetData("http://api.pathofexile.com/leagues");
-	auto league_info = nlohmann::json::parse(data);
+	rapidjson::Document json;
+	json.ParseInsitu(data.data());
+
 	std::vector<std::string> leagues;
-	for (const auto& league : league_info) {
-		std::string league_name = league["id"];
+	for (const auto& league : json.GetArray()) {
+		std::string league_name = league["id"].GetString();
 		if (league_name.find("SSF") == std::string::npos) {
-			leagues.push_back(league["id"]);
+			leagues.push_back(league_name);
 		}
 	}
 
@@ -49,11 +61,12 @@ std::vector<std::string> ApiHandler::GetCurrentLeagues()
 std::vector<std::string> ApiHandler::GetStashTabList()
 {
 	auto data = http_.GetData("https://www.pathofexile.com/character-window/get-stash-items?accountName=" + user_.account_name_ + "&realm=pc&league=" + user_.selected_league_ + "&tabs=1&tabIndex=0");
-	auto json = nlohmann::json::parse(data);
+	rapidjson::Document json;
+	json.ParseInsitu(data.data());
 
 	std::vector<std::string> tab_list;
-	for (const auto& tab : json["tabs"]) {
-		tab_list.push_back(tab["n"]);
+	for (const auto& tab : json["tabs"].GetArray()) {
+		tab_list.push_back(tab["n"].GetString());
 	}
 
 	return tab_list;
@@ -63,18 +76,19 @@ std::vector<std::string> ApiHandler::GetStashTabList()
 std::vector<std::string> ApiHandler::GetStashItems(int index)
 {
 	auto data = http_.GetData("https://www.pathofexile.com/character-window/get-stash-items?accountName=" + user_.account_name_ + "&realm=pc&league=" + user_.selected_league_ + "&tabs=0&tabIndex=" + std::to_string(index));
-	auto json = nlohmann::json::parse(data);
+	rapidjson::Document json;
+	json.ParseInsitu(data.data());
 
 	std::vector<std::string> item_list;
-	for (const auto& item : json["items"]) {
+	for (const auto& item : json["items"].GetArray()) {
 		if (item["identified"] == false) {
 			continue;
 		}
 		if (item["name"] != "") {
-			item_list.push_back(item["name"]);
+			item_list.push_back(item["name"].GetString());
 		}
 		else {
-			item_list.push_back(item["typeLine"]);
+			item_list.push_back(item["typeLine"].GetString());
 		}
 	}
 
@@ -93,7 +107,7 @@ std::unordered_map<std::string, float> ApiHandler::GetPriceData(const std::strin
 											"UniqueFlask", "UniqueWeapon", "UniqueArmour", 
 											"UniqueAccessory", "Beast" };
 
-	std::unordered_map<std::string, float> price_data;
+	std::unordered_map<std::string, float> price_info;
 
 	if (!std::filesystem::exists("PriceData/" + league)) {
 		std::filesystem::create_directories("PriceData/" + league);
@@ -105,36 +119,48 @@ std::unordered_map<std::string, float> ApiHandler::GetPriceData(const std::strin
 
 	for (const auto& currency : currencies) {
 
-		std::ofstream file("PriceData/" + league + std::string("/") + currency + ".json");
-		nlohmann::json json_file;
-
-
 		auto data = http_.GetData(base_url + "currencyoverview?league=" + league_encoded + "&type=" + currency);
-		auto json = nlohmann::json::parse(data);
+		rapidjson::Document json;
+		json.ParseInsitu(data.data());
 
-		for (const auto& line : json["lines"]){
-			std::string item = line["currencyTypeName"];
-			float price = line["chaosEquivalent"];
-			json_file[item] = price;
-			
+		rapidjson::Document price_data;
+		price_data.SetObject();
+		for (const auto& line : json["lines"].GetArray()){
+			rapidjson::Value temp;
+			rapidjson::Value item(line["currencyTypeName"].GetString(), price_data.GetAllocator());
+			rapidjson::Value price(line["chaosEquivalent"].GetFloat());
+			price_data.AddMember(item.Move(), price.Move(), price_data.GetAllocator());
 		}
-		file << std::setw(4) << json_file << std::endl;
+
+		rapidjson::StringBuffer buffer;
+		rapidjson::Writer<rapidjson::StringBuffer> jsonWriter(buffer);
+		price_data.Accept(jsonWriter);
+
+		std::ofstream file("PriceData/" + league + std::string("/") + currency + ".json");
+		file << buffer.GetString() << std::endl;
 	}
 
 	for (const auto& item : items) {
 		auto data = http_.GetData(base_url + "itemoverview?league=" + league_encoded + "&type=" + item);
-		auto json = nlohmann::json::parse(data);
+		rapidjson::Document json;
+		json.ParseInsitu(data.data());
 
-		std::ofstream file("PriceData/" + league + std::string("/") + item + ".json");
-		nlohmann::json json_file;
-	
-		for (const auto& line : json["lines"]) {
-			std::string item = line["name"];
-			float price = line["chaosValue"];
-			json_file[item] = price;
+		rapidjson::Document price_data;
+		price_data.SetObject();
+		for (const auto& line : json["lines"].GetArray()) {
+			rapidjson::Value temp;
+			rapidjson::Value item(line["name"].GetString(), price_data.GetAllocator());
+			rapidjson::Value price(line["chaosValue"].GetFloat());
+			price_data.AddMember(item.Move(), price.Move(), price_data.GetAllocator());
 		}
 
-		file << std::setw(4) << json_file << std::endl;
+		rapidjson::StringBuffer buffer;
+		rapidjson::Writer<rapidjson::StringBuffer> jsonWriter(buffer);
+		price_data.Accept(jsonWriter);
+
+		std::ofstream file("PriceData/" + league + std::string("/") + item + ".json");
+		file << buffer.GetString() << std::endl;
+	
 	}
-	return price_data;
+	return price_info;
 }
