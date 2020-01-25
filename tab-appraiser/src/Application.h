@@ -25,7 +25,7 @@ public:
 
 	void SetImGuiStyle();
 	void SetPOESESSID(const char* id);
-	std::unordered_map<std::string, float> GetItemPrices();
+	std::vector<std::pair<std::string, float>> GetItemPrices();
 
 	void Run();
 	void Render();
@@ -37,9 +37,10 @@ private:
 	bool running_ = true;
 	std::vector<std::string> current_leagues_;
 	std::vector<std::string> stash_items_;
-	std::unordered_map<std::string, float> stash_item_prices_;
+	std::vector<std::pair<std::string, float>> stash_item_prices_;
 	std::unordered_map<std::string, float> ninja_data_;
-	int selected_stash_index_;
+	int selected_stash_index_= 0;
+	int price_threshold_ = 0;
 
 	UserData user_;
 	State state_;

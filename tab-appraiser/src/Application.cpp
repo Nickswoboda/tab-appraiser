@@ -68,32 +68,29 @@ void Application::Render()
 	glClear(GL_COLOR_BUFFER_BIT);
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
-
 	ImGui::NewFrame();
-	ImGui::Begin("Window");
+
+	ImGui::SetNextWindowSize({ (float)window_.width_, (float)window_.height_ });
+	ImGui::Begin("Tab Appraiser", &running_, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
+	ImGui::Separator();
 
 	ImGui::Text("Account: "); ImGui::SameLine(); ImGui::Text(user_.account_name_.c_str());
 	ImGui::SameLine();
 	if (ImGui::Button("Change Account")) {
 		state_ = State::Get_POESESSID;
 	}
-	
-	if (!user_.account_name_.empty() && user_.account_name_ != "error") {
-		ImGui::Text("League: "); ImGui::SameLine(); ImGui::Text(user_.selected_league_.c_str());
-		ImGui::SameLine();
-		if (ImGui::Button("Select League")) {
-			state_ = State::LeagueSelection;
-		}
-	}
 
-	if (!user_.selected_league_.empty()) {
-		static auto combo_selection = user_.stash_tab_list_[0];
-		static int selection_index = 0;
-		if (ImGui::BeginCombo("Tabs: ", combo_selection.c_str())) {
-			for (int i = 0; i < user_.stash_tab_list_.size(); i++) {
-				if (ImGui::Selectable(user_.stash_tab_list_[i].c_str())) {
-					combo_selection = user_.stash_tab_list_[i];
-					selection_index = i;
+	if (!user_.account_name_.empty() && user_.account_name_ != "error") {
+		ImGui::Text("League: ");
+		ImGui::SameLine();
+
+		static std::string combo_selection = user_.selected_league_.empty() ? "Select a League" : user_.selected_league_;
+		if (ImGui::BeginCombo("##LeagueCombo", combo_selection.c_str())) {
+			for (auto& league : current_leagues_) {
+				if (ImGui::Selectable(league.c_str())) {
+					combo_selection = league;
+					user_.selected_league_ = league;
+					user_.stash_tab_list_ = api_handler_.GetStashTabList();
 				}
 			}
 			//selectable popup does not close if user clicks out of window and loses focus
@@ -103,21 +100,44 @@ void Application::Render()
 			}
 			ImGui::EndCombo();
 		}
+	}
 
+	if (!user_.selected_league_.empty()) {
+		ImGui::Text("Stash Tab: ");
 		ImGui::SameLine();
-		ImGui::Button("Get Prices");
-
-		if (ImGui::Button("Ok")) {
-			selected_stash_index_ = selection_index;
-			stash_items_ = api_handler_.GetStashItems(selected_stash_index_);
-			if (ninja_data_.empty()) {
-				ninja_data_ = api_handler_.GetPriceData(user_.selected_league_);
+		static std::string combo_selection = "Select a Stash Tab";
+		if (ImGui::BeginCombo("##StashTabsCombo", combo_selection.c_str())) {
+			for (int i = 0; i < user_.stash_tab_list_.size(); i++) {
+				if (ImGui::Selectable(user_.stash_tab_list_[i].c_str())) {
+					combo_selection = user_.stash_tab_list_[i];
+					selected_stash_index_ = i;
+					stash_items_ = api_handler_.GetStashItems(selected_stash_index_);
+					if (ninja_data_.empty()) {
+						ninja_data_ = api_handler_.GetPriceData(user_.selected_league_);
+					}
+					stash_item_prices_ = GetItemPrices();
+				}
 			}
-			stash_item_prices_ = GetItemPrices();
-			state_ = State::ItemList;
+			//selectable popup does not close if user clicks out of window and loses focus
+			//must do manually
+			if (!Window::IsFocused()) {
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndCombo();
 		}
 	}
 
+	ImGui::Separator();
+
+	if (!stash_item_prices_.empty()) {
+		ImGui::BeginChildFrame(1, { (float)window_.width_, 300 });
+		for (const auto& item : stash_item_prices_) {
+			ImGui::Text(item.first.c_str());
+			ImGui::SameLine(200);
+			ImGui::Text("%.1f", item.second);
+		}
+		ImGui::EndChildFrame();
+	}
 	
 	switch (state_) {
 		case State::Get_POESESSID:
@@ -130,74 +150,14 @@ void Application::Render()
 				state_ = State::Default;
 			}
 			break;
-
-		case State::LeagueSelection:
-		{
-			ImGui::Text("Select a league");
-
-			static auto combo_selection = current_leagues_[0];
-			if (ImGui::BeginCombo("Leagues: ", combo_selection.c_str())) {
-				for (auto& league : current_leagues_) {
-					if (ImGui::Selectable(league.c_str())) {
-						combo_selection = league;
-					}
-				}
-				//selectable popup does not close if user clicks out of window and loses focus
-				//must do manually
-				if (!Window::IsFocused()) {
-					ImGui::CloseCurrentPopup();
-				}
-				ImGui::EndCombo();
-			}
-
-			if (ImGui::Button("Ok")) {
-				user_.selected_league_ = combo_selection;
-				user_.stash_tab_list_ = api_handler_.GetStashTabList();
-				state_ = State::Default;
-			}
-			break;
-		}
-		case State::StashTabList:
-		{
-			static auto combo_selection = user_.stash_tab_list_[0];
-			static int selection_index = 0;
-			if (ImGui::BeginCombo("Tabs: ", combo_selection.c_str())) {
-				for (int i = 0; i < user_.stash_tab_list_.size(); i++) {
-					if (ImGui::Selectable(user_.stash_tab_list_[i].c_str())) {
-						combo_selection = user_.stash_tab_list_[i];
-						selection_index = i;
-					}
-				}
-				//selectable popup does not close if user clicks out of window and loses focus
-				//must do manually
-				if (!Window::IsFocused()) {
-					ImGui::CloseCurrentPopup();
-				}
-				ImGui::EndCombo();
-			}
-
-			if (ImGui::Button("Ok")) {
-				selected_stash_index_ = selection_index;
-				stash_items_ = api_handler_.GetStashItems(selected_stash_index_);
-				if (ninja_data_.empty()) {
-					ninja_data_ = api_handler_.GetPriceData(user_.selected_league_);
-				}
-				stash_item_prices_ = GetItemPrices();
-				state_ = State::ItemList;
-			}
-			break;
-		}
-		case State::ItemList:
-		{
-			for (const auto& item : stash_item_prices_) {
-				ImGui::Text(item.first.c_str());
-				ImGui::SameLine();
-				ImGui::Text(std::to_string(item.second).c_str());
-			}
-			break;
-		}
 	}
 	
+	ImGui::Text("Price Threshold: ");
+	ImGui::SameLine();
+	if (ImGui::InputInt("##PriceThreshold", &price_threshold_)) {
+		stash_item_prices_ = GetItemPrices();
+	}
+
 	if (!user_.selected_league_.empty()) {
 		if (ImGui::Button("Update Price Info")) {
 			 ninja_data_= api_handler_.GetPriceData(user_.selected_league_);
@@ -283,15 +243,21 @@ void Application::SetPOESESSID(const char* id)
 	user_.account_name_ = api_handler_.GetAccountName();
 }
 
-std::unordered_map<std::string, float> Application::GetItemPrices()
+std::vector<std::pair<std::string, float>> Application::GetItemPrices()
 {
-	std::unordered_map<std::string, float> item_price;
+	std::vector<std::pair<std::string, float>> item_price;
 
 	for (const auto& item : stash_items_) {
 		if (ninja_data_.count(item)) {
-			item_price[item] = ninja_data_[item];
+			if (ninja_data_[item] > price_threshold_) {
+				item_price.push_back({ item, ninja_data_[item] });
+			}
 		}
 	}
+
+	std::sort(item_price.begin(), item_price.end(), [](auto& left, auto& right) {
+		return left.second > right.second;
+	});
 
 	return item_price;
 }
