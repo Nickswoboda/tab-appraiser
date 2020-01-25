@@ -38,7 +38,7 @@ std::string ApiHandler::GetAccountName()
 			acc_name += character;
 		}
 	}
-	return "Unable to find account name";
+	return "error";
 }
 
 std::vector<std::string> ApiHandler::GetCurrentLeagues()
@@ -99,13 +99,12 @@ std::unordered_map<std::string, float> ApiHandler::GetPriceData(const std::strin
 {
 	std::string base_url = "https://poe.ninja/api/data/";
 	std::array<std::string, 2> currencies = { "Currency", "Fragment" };
-	std::array<std::string, 20> items = { "Watchstone", "Oil", "Incubator", 
+	std::array<std::string, 17> items = { "Watchstone", "Oil", "Incubator", 
 											"Scarab", "Fossil", "Resonator", 
 											"Essence", "DivinationCard", "Prophecy", 
-											"SkillGem", "BaseType", "HelmetEnchant", 
-											"UniqueMap", "Map", "UniqueJewel", 
-											"UniqueFlask", "UniqueWeapon", "UniqueArmour", 
-											"UniqueAccessory", "Beast" };
+											"SkillGem", "UniqueMap", "Map", 
+											"UniqueJewel", "UniqueFlask", "UniqueWeapon", 
+											"UniqueArmour", "UniqueAccessory"};
 
 	std::unordered_map<std::string, float> price_info;
 
@@ -123,43 +122,21 @@ std::unordered_map<std::string, float> ApiHandler::GetPriceData(const std::strin
 		rapidjson::Document json;
 		json.ParseInsitu(data.data());
 
-		rapidjson::Document price_data;
-		price_data.SetObject();
 		for (const auto& line : json["lines"].GetArray()){
-			rapidjson::Value temp;
-			rapidjson::Value item(line["currencyTypeName"].GetString(), price_data.GetAllocator());
-			rapidjson::Value price(line["chaosEquivalent"].GetFloat());
-			price_data.AddMember(item.Move(), price.Move(), price_data.GetAllocator());
+			price_info[line["currencyTypeName"].GetString()] = line["chaosEquivalent"].GetFloat();
 		}
-
-		rapidjson::StringBuffer buffer;
-		rapidjson::Writer<rapidjson::StringBuffer> jsonWriter(buffer);
-		price_data.Accept(jsonWriter);
-
-		std::ofstream file("PriceData/" + league + std::string("/") + currency + ".json");
-		file << buffer.GetString() << std::endl;
 	}
 
 	for (const auto& item : items) {
 		auto data = http_.GetData(base_url + "itemoverview?league=" + league_encoded + "&type=" + item);
 		rapidjson::Document json;
 		json.ParseInsitu(data.data());
-
+		
 		rapidjson::Document price_data;
 		price_data.SetObject();
 		for (const auto& line : json["lines"].GetArray()) {
-			rapidjson::Value temp;
-			rapidjson::Value item(line["name"].GetString(), price_data.GetAllocator());
-			rapidjson::Value price(line["chaosValue"].GetFloat());
-			price_data.AddMember(item.Move(), price.Move(), price_data.GetAllocator());
+			price_info[line["name"].GetString()] = line["chaosValue"].GetFloat();
 		}
-
-		rapidjson::StringBuffer buffer;
-		rapidjson::Writer<rapidjson::StringBuffer> jsonWriter(buffer);
-		price_data.Accept(jsonWriter);
-
-		std::ofstream file("PriceData/" + league + std::string("/") + item + ".json");
-		file << buffer.GetString() << std::endl;
 	
 	}
 	return price_info;

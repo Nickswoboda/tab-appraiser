@@ -7,7 +7,11 @@
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_glfw.h>
 
+#include <json.hpp>
+
+#include <iomanip>
 #include <iostream>
+#include <fstream>
 
 Application::Application(int width, int height)
 	:window_(width, height), api_handler_(user_)
@@ -68,6 +72,53 @@ void Application::Render()
 	ImGui::NewFrame();
 	ImGui::Begin("Window");
 
+	ImGui::Text("Account: "); ImGui::SameLine(); ImGui::Text(user_.account_name_.c_str());
+	ImGui::SameLine();
+	if (ImGui::Button("Change Account")) {
+		state_ = State::Get_POESESSID;
+	}
+	
+	if (!user_.account_name_.empty() && user_.account_name_ != "error") {
+		ImGui::Text("League: "); ImGui::SameLine(); ImGui::Text(user_.selected_league_.c_str());
+		ImGui::SameLine();
+		if (ImGui::Button("Select League")) {
+			state_ = State::LeagueSelection;
+		}
+	}
+
+	if (!user_.selected_league_.empty()) {
+		static auto combo_selection = user_.stash_tab_list_[0];
+		static int selection_index = 0;
+		if (ImGui::BeginCombo("Tabs: ", combo_selection.c_str())) {
+			for (int i = 0; i < user_.stash_tab_list_.size(); i++) {
+				if (ImGui::Selectable(user_.stash_tab_list_[i].c_str())) {
+					combo_selection = user_.stash_tab_list_[i];
+					selection_index = i;
+				}
+			}
+			//selectable popup does not close if user clicks out of window and loses focus
+			//must do manually
+			if (!Window::IsFocused()) {
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndCombo();
+		}
+
+		ImGui::SameLine();
+		ImGui::Button("Get Prices");
+
+		if (ImGui::Button("Ok")) {
+			selected_stash_index_ = selection_index;
+			stash_items_ = api_handler_.GetStashItems(selected_stash_index_);
+			if (ninja_data_.empty()) {
+				ninja_data_ = api_handler_.GetPriceData(user_.selected_league_);
+			}
+			stash_item_prices_ = GetItemPrices();
+			state_ = State::ItemList;
+		}
+	}
+
+	
 	switch (state_) {
 		case State::Get_POESESSID:
 			ImGui::Text("Please Enter Your POESESSID");
@@ -76,13 +127,12 @@ void Application::Render()
 			
 			if (ImGui::Button("OK")){
 				SetPOESESSID(sess_id_input);
-				state_ = State::LeagueSelection;
+				state_ = State::Default;
 			}
 			break;
 
 		case State::LeagueSelection:
 		{
-			ImGui::Text(user_.account_name_.c_str());
 			ImGui::Text("Select a league");
 
 			static auto combo_selection = current_leagues_[0];
@@ -103,15 +153,12 @@ void Application::Render()
 			if (ImGui::Button("Ok")) {
 				user_.selected_league_ = combo_selection;
 				user_.stash_tab_list_ = api_handler_.GetStashTabList();
-				state_ = State::StashTabList;
+				state_ = State::Default;
 			}
 			break;
 		}
 		case State::StashTabList:
 		{
-			ImGui::Text(user_.account_name_.c_str());
-			ImGui::Text(user_.selected_league_.c_str());
-
 			static auto combo_selection = user_.stash_tab_list_[0];
 			static int selection_index = 0;
 			if (ImGui::BeginCombo("Tabs: ", combo_selection.c_str())) {
@@ -132,29 +179,34 @@ void Application::Render()
 			if (ImGui::Button("Ok")) {
 				selected_stash_index_ = selection_index;
 				stash_items_ = api_handler_.GetStashItems(selected_stash_index_);
-				price_data_ = GetItemPrices();
+				if (ninja_data_.empty()) {
+					ninja_data_ = api_handler_.GetPriceData(user_.selected_league_);
+				}
+				stash_item_prices_ = GetItemPrices();
 				state_ = State::ItemList;
 			}
 			break;
 		}
 		case State::ItemList:
 		{
-			ImGui::Text(user_.account_name_.c_str());
-			ImGui::Text(user_.selected_league_.c_str());
-			ImGui::Text(user_.stash_tab_list_[selected_stash_index_].c_str());
-
-			for (const auto& item : price_data_) {
+			for (const auto& item : stash_item_prices_) {
 				ImGui::Text(item.first.c_str());
 				ImGui::SameLine();
 				ImGui::Text(std::to_string(item.second).c_str());
 			}
-
-			if (ImGui::Button("Back")) {
-				state_ = State::StashTabList;
-			}
 			break;
 		}
-			
+	}
+	
+	if (!user_.selected_league_.empty()) {
+		if (ImGui::Button("Update Price Info")) {
+			 ninja_data_= api_handler_.GetPriceData(user_.selected_league_);
+			 stash_item_prices_ = GetItemPrices();
+		}
+	}
+
+	if (ImGui::Button("Save")) {
+		Save();
 	}
 
 	ImVec2 pos = ImGui::GetWindowPos();
@@ -174,15 +226,43 @@ void Application::Render()
 
 void Application::Save()
 {
+	std::ofstream file("save-data.json");
 
+	nlohmann::json json;
+	json["POESESSID"] = user_.POESESSID_;
+	json["selectedLeague"] = user_.selected_league_;
+	json["windowX"] = window_.x_pos_;
+	json["windowY"] = window_.y_pos_;
+	
+	file << std::setw(4) << json << std::endl;
 }
 
 void Application::Load()
 {
-	current_leagues_ = api_handler_.GetCurrentLeagues();
-	for (const auto& league : current_leagues_) {
-		price_data_ = api_handler_.GetPriceData(league.c_str());
+	std::ifstream file("save-data.json");
+	if (file.is_open()) {
+		auto json = nlohmann::json::parse(file);
+
+		if (json.count("POESESSID")) {
+			user_.POESESSID_ = json["POESESSID"];
+			if (!user_.POESESSID_.empty()) {
+				SetPOESESSID(user_.POESESSID_.c_str());
+			}
+		}
+
+		if (json.count("selectedLeague")) {
+			user_.selected_league_ = json["selectedLeague"];
+			if (!user_.selected_league_.empty()) {
+				user_.stash_tab_list_ = api_handler_.GetStashTabList();
+			}
+		}
+
+		if (json.count("windowX") && json.count("windowY")) {
+			window_.Move(json["windowX"], json["windowY"]);
+		}
 	}
+
+	current_leagues_ = api_handler_.GetCurrentLeagues();
 }
 
 void Application::SetImGuiStyle()
@@ -201,25 +281,15 @@ void Application::SetPOESESSID(const char* id)
 {
 	user_.POESESSID_ = id;
 	user_.account_name_ = api_handler_.GetAccountName();
-	
-	std::cout << user_.account_name_ << "\n";
-
-	std::cout << "Current Leagues: ";
-	for (const auto& league : current_leagues_) {
-		std::cout << league << ", ";
-	}
-	std::cout << "\n";
-	
 }
 
 std::unordered_map<std::string, float> Application::GetItemPrices()
 {
-	auto price_data = api_handler_.GetPriceData(user_.selected_league_.c_str());
 	std::unordered_map<std::string, float> item_price;
 
 	for (const auto& item : stash_items_) {
-		if (price_data.count(item)) {
-			item_price[item] = price_data[item];
+		if (ninja_data_.count(item)) {
+			item_price[item] = ninja_data_[item];
 		}
 	}
 

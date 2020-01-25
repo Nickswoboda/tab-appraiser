@@ -4,6 +4,7 @@ Release/
 tab-appraiser/Debug/
 tab-appraiser/Release/
 tab-appraiser/PriceData/
+tab-appraiser/save-data.json
 
 *.user
 *.ini

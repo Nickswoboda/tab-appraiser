@@ -13,6 +13,7 @@ public:
 
 	enum class State
 	{
+		Default,
 		Get_POESESSID,
 		LeagueSelection,
 		StashTabList,
@@ -36,7 +37,8 @@ private:
 	bool running_ = true;
 	std::vector<std::string> current_leagues_;
 	std::vector<std::string> stash_items_;
-	std::unordered_map<std::string, float> price_data_;
+	std::unordered_map<std::string, float> stash_item_prices_;
+	std::unordered_map<std::string, float> ninja_data_;
 	int selected_stash_index_;
 
 	UserData user_;
