@@ -3,13 +3,14 @@
 Http::Http()
 {
 	curl_global_init(CURL_GLOBAL_DEFAULT);
-	curl = curl_easy_init();
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, Http::WriteToString);
 }
 
 Http::~Http()
 {
-	curl_easy_cleanup(curl);
+	for (auto& handle : curl_handles_) {
+		curl_easy_cleanup(handle);
+	}
+
 	curl_global_cleanup();
 }
 
@@ -21,23 +22,30 @@ size_t Http::WriteToString(void* buffer, size_t size, size_t nmemb, void* userda
 	return totalsize;
 }
 
-std::string Http::GetData(const std::string& url)
+std::string Http::GetData(CURL* handle, const std::string& url)
 {
 	std::string result;
 
-	curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &result);
-	int success = curl_easy_perform(curl);
+	curl_easy_setopt(handle, CURLOPT_URL, url.c_str());
+	curl_easy_setopt(handle, CURLOPT_WRITEDATA, &result);
+	curl_easy_perform(handle);
 
 	return result;
 }
 
-void Http::SetCookie(const std::string& cookie)
+void Http::SetCookie(CURL* handle, const std::string& cookie)
 {
-	curl_easy_setopt(curl, CURLOPT_COOKIE, cookie.c_str());
+	curl_easy_setopt(handle, CURLOPT_COOKIE, cookie.c_str());
 }
 
-void Http::SetVerbose(bool verbose)
+void Http::SetVerbose(CURL* handle, bool verbose)
 {
-	curl_easy_setopt(curl, CURLOPT_VERBOSE, verbose);
+	curl_easy_setopt(handle, CURLOPT_VERBOSE, verbose);
+}
+
+CURL* Http::CreateHandle()
+{
+	auto handle = curl_easy_init();
+	curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, Http::WriteToString);
+	return handle;
 }

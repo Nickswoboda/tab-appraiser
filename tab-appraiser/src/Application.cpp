@@ -16,7 +16,6 @@
 Application::Application(int width, int height)
 	:window_(width, height), api_handler_(user_)
 {
-	api_handler_.http_.SetVerbose(true);
 	if (!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress))) {
 		std::cout << "could not load GLAD";
 	}
@@ -77,7 +76,22 @@ void Application::Render()
 	ImGui::Text("Account: "); ImGui::SameLine(); ImGui::Text(user_.account_name_.c_str());
 	ImGui::SameLine();
 	if (ImGui::Button("Change Account")) {
-		state_ = State::Get_POESESSID;
+		changing_account_ = true;
+	}
+
+	if (changing_account_) {
+		ImGui::Text("Please Enter Your POESESSID");
+		static char sess_id_input[100];
+		ImGui::InputText("##Input", sess_id_input, 100);
+
+		if (ImGui::Button("OK")) {
+			SetPOESESSID(sess_id_input);
+			changing_account_ = false;
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel")) {
+			changing_account_ = false;
+		}
 	}
 
 	if (!user_.account_name_.empty() && user_.account_name_ != "error") {
@@ -137,19 +151,6 @@ void Application::Render()
 			ImGui::Text("%.1f", item.second);
 		}
 		ImGui::EndChildFrame();
-	}
-	
-	switch (state_) {
-		case State::Get_POESESSID:
-			ImGui::Text("Please Enter Your POESESSID");
-			static char sess_id_input[100];
-			ImGui::InputText("##Input", sess_id_input, 100);
-			
-			if (ImGui::Button("OK")){
-				SetPOESESSID(sess_id_input);
-				state_ = State::Default;
-			}
-			break;
 	}
 	
 	ImGui::Text("Price Threshold: ");

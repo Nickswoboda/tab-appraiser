@@ -13,16 +13,26 @@
 #include <filesystem>
 #include <array>
 
+ApiHandler::ApiHandler(UserData& user)
+	:user_(user)
+{
+	poe_curl_handle_ = http_.CreateHandle();
+	ninja_curl_handle_ = http_.CreateHandle();
+
+	http_.SetVerbose(poe_curl_handle_, true);
+	http_.SetVerbose(ninja_curl_handle_, true);
+}
+
 void ApiHandler::SetPOESESSIDCookie()
 {
-	http_.SetCookie("POESESSID=" + user_.POESESSID_);
+	http_.SetCookie(poe_curl_handle_, "POESESSID=" + user_.POESESSID_);
 }
 
 std::string ApiHandler::GetAccountName()
 {
 	SetPOESESSIDCookie();
 
-	auto data = http_.GetData("https://www.pathofexile.com/my-account");
+	auto data = http_.GetData(poe_curl_handle_, "https://www.pathofexile.com/my-account");
 	std::string temp = "/account/view-profile/";
 	const int temp_length = 22;
 
@@ -43,7 +53,7 @@ std::string ApiHandler::GetAccountName()
 
 std::vector<std::string> ApiHandler::GetCurrentLeagues()
 {
-	auto data = http_.GetData("http://api.pathofexile.com/leagues");
+	auto data = http_.GetData(poe_curl_handle_, "http://api.pathofexile.com/leagues");
 	rapidjson::Document json;
 	json.ParseInsitu(data.data());
 
@@ -60,7 +70,8 @@ std::vector<std::string> ApiHandler::GetCurrentLeagues()
 
 std::vector<std::string> ApiHandler::GetStashTabList()
 {
-	auto data = http_.GetData("https://www.pathofexile.com/character-window/get-stash-items?accountName=" + user_.account_name_ + "&realm=pc&league=" + user_.selected_league_ + "&tabs=1&tabIndex=0");
+	auto data = http_.GetData(poe_curl_handle_, 
+		"https://www.pathofexile.com/character-window/get-stash-items?accountName=" + user_.account_name_ + "&realm=pc&league=" + user_.selected_league_ + "&tabs=1&tabIndex=0");
 	rapidjson::Document json;
 	json.ParseInsitu(data.data());
 
@@ -75,7 +86,8 @@ std::vector<std::string> ApiHandler::GetStashTabList()
 
 std::vector<std::string> ApiHandler::GetStashItems(int index)
 {
-	auto data = http_.GetData("https://www.pathofexile.com/character-window/get-stash-items?accountName=" + user_.account_name_ + "&realm=pc&league=" + user_.selected_league_ + "&tabs=0&tabIndex=" + std::to_string(index));
+	auto data = http_.GetData(poe_curl_handle_, 
+		"https://www.pathofexile.com/character-window/get-stash-items?accountName=" + user_.account_name_ + "&realm=pc&league=" + user_.selected_league_ + "&tabs=0&tabIndex=" + std::to_string(index));
 	rapidjson::Document json;
 	json.ParseInsitu(data.data());
 
@@ -118,7 +130,7 @@ std::unordered_map<std::string, float> ApiHandler::GetPriceData(const std::strin
 
 	for (const auto& currency : currencies) {
 
-		auto data = http_.GetData(base_url + "currencyoverview?league=" + league_encoded + "&type=" + currency);
+		auto data = http_.GetData(ninja_curl_handle_, base_url + "currencyoverview?league=" + league_encoded + "&type=" + currency);
 		rapidjson::Document json;
 		json.ParseInsitu(data.data());
 
@@ -128,7 +140,7 @@ std::unordered_map<std::string, float> ApiHandler::GetPriceData(const std::strin
 	}
 
 	for (const auto& item : items) {
-		auto data = http_.GetData(base_url + "itemoverview?league=" + league_encoded + "&type=" + item);
+		auto data = http_.GetData(ninja_curl_handle_, base_url + "itemoverview?league=" + league_encoded + "&type=" + item);
 		rapidjson::Document json;
 		json.ParseInsitu(data.data());
 		

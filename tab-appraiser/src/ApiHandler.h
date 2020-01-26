@@ -9,8 +9,7 @@
 class ApiHandler
 {
 public:
-	ApiHandler(UserData& user)
-		: user_(user) {}
+	ApiHandler(UserData& user);
 	void SetPOESESSIDCookie();
 	std::string GetAccountName();
 	std::vector<std::string> GetCurrentLeagues();
@@ -19,6 +18,8 @@ public:
 	std::unordered_map<std::string, float> GetPriceData(const std::string& league);
 
 	Http http_;
+	CURL* poe_curl_handle_;
+	CURL* ninja_curl_handle_;
 	UserData& user_;
 
 };

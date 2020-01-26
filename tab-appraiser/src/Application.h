@@ -11,15 +11,6 @@ class Application
 {
 public:
 
-	enum class State
-	{
-		Default,
-		Get_POESESSID,
-		LeagueSelection,
-		StashTabList,
-		ItemList
-	};
-
 	Application(int width, int height);
 	~Application();
 
@@ -35,6 +26,7 @@ public:
 
 private:
 	bool running_ = true;
+	bool changing_account_ = false;
 	std::vector<std::string> current_leagues_;
 	std::vector<std::string> stash_items_;
 	std::vector<std::pair<std::string, float>> stash_item_prices_;
@@ -43,7 +35,6 @@ private:
 	int price_threshold_ = 0;
 
 	UserData user_;
-	State state_;
 	Window window_;
 	ApiHandler api_handler_;
 };
