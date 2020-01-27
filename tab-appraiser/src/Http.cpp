@@ -1,5 +1,7 @@
 #include "Http.h"
 
+#include <iostream>
+
 Http::Http()
 {
 	curl_global_init(CURL_GLOBAL_DEFAULT);
@@ -28,7 +30,10 @@ std::string Http::GetData(CURL* handle, const std::string& url)
 
 	curl_easy_setopt(handle, CURLOPT_URL, url.c_str());
 	curl_easy_setopt(handle, CURLOPT_WRITEDATA, &result);
-	curl_easy_perform(handle);
+	int error_code = curl_easy_perform(handle);
+	if (error_code != CURLE_OK) {
+		std::cout << "Unable to perform Http Request. Error Code: " << error_code << "\n";
+	}
 
 	return result;
 }

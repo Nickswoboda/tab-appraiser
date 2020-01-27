@@ -14,7 +14,7 @@
 #include <fstream>
 
 Application::Application(int width, int height)
-	:window_(width, height), api_handler_(user_)
+	:window_(width, height), api_handler_(user_, errors_)
 {
 	if (!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress))) {
 		std::cout << "could not load GLAD";
@@ -73,101 +73,107 @@ void Application::Render()
 	ImGui::Begin("Tab Appraiser", &running_, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
 	ImGui::Separator();
 
-	ImGui::Text("Account: "); ImGui::SameLine(); ImGui::Text(user_.account_name_.c_str());
-	ImGui::SameLine();
-	if (ImGui::Button("Change Account")) {
-		changing_account_ = true;
+	if (!errors_.empty()) {
+		RenderErrors();
 	}
-
-	if (changing_account_) {
-		ImGui::Text("Please Enter Your POESESSID");
-		static char sess_id_input[100];
-		ImGui::InputText("##Input", sess_id_input, 100);
-
-		if (ImGui::Button("OK")) {
-			SetPOESESSID(sess_id_input);
-			changing_account_ = false;
-		}
+	else {
+		ImGui::Text("Account: "); ImGui::SameLine(); ImGui::Text(user_.account_name_.c_str());
 		ImGui::SameLine();
-		if (ImGui::Button("Cancel")) {
-			changing_account_ = false;
+		if (ImGui::Button("Change Account")) {
+			changing_account_ = true;
 		}
-	}
 
-	if (!user_.account_name_.empty() && user_.account_name_ != "error") {
-		ImGui::Text("League: ");
-		ImGui::SameLine();
+		if (changing_account_) {
+			ImGui::Text("Please Enter Your POESESSID");
+			static char sess_id_input[100];
+			ImGui::InputText("##Input", sess_id_input, 100);
 
-		static std::string combo_selection = user_.selected_league_.empty() ? "Select a League" : user_.selected_league_;
-		if (ImGui::BeginCombo("##LeagueCombo", combo_selection.c_str())) {
-			for (auto& league : current_leagues_) {
-				if (ImGui::Selectable(league.c_str())) {
-					combo_selection = league;
-					user_.selected_league_ = league;
-					user_.stash_tab_list_ = api_handler_.GetStashTabList();
-				}
+			if (ImGui::Button("OK")) {
+				SetPOESESSID(sess_id_input);
+				changing_account_ = false;
 			}
-			//selectable popup does not close if user clicks out of window and loses focus
-			//must do manually
-			if (!Window::IsFocused()) {
-				ImGui::CloseCurrentPopup();
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel")) {
+				changing_account_ = false;
 			}
-			ImGui::EndCombo();
 		}
-	}
 
-	if (!user_.selected_league_.empty()) {
-		ImGui::Text("Stash Tab: ");
-		ImGui::SameLine();
-		static std::string combo_selection = "Select a Stash Tab";
-		if (ImGui::BeginCombo("##StashTabsCombo", combo_selection.c_str())) {
-			for (int i = 0; i < user_.stash_tab_list_.size(); i++) {
-				if (ImGui::Selectable(user_.stash_tab_list_[i].c_str())) {
-					combo_selection = user_.stash_tab_list_[i];
-					selected_stash_index_ = i;
-					stash_items_ = api_handler_.GetStashItems(selected_stash_index_);
-					if (ninja_data_.empty()) {
+		if (!user_.account_name_.empty() && user_.account_name_ != "error") {
+			ImGui::Text("League: ");
+			ImGui::SameLine();
+
+			static std::string combo_selection = user_.selected_league_.empty() ? "Select a League" : user_.selected_league_;
+			if (ImGui::BeginCombo("##LeagueCombo", combo_selection.c_str())) {
+				for (auto& league : current_leagues_) {
+					if (ImGui::Selectable(league.c_str())) {
+						combo_selection = league;
+						user_.selected_league_ = league;
+						user_.stash_tab_list_ = api_handler_.GetStashTabList();
+
+
 						ninja_data_ = api_handler_.GetPriceData(user_.selected_league_);
+						selected_stash_index_ = -1;
+						stash_item_prices_.clear();
+
 					}
-					stash_item_prices_ = GetItemPrices();
 				}
+				//selectable popup does not close if user clicks out of window and loses focus
+				//must do manually
+				if (!Window::IsFocused()) {
+					ImGui::CloseCurrentPopup();
+				}
+				ImGui::EndCombo();
 			}
-			//selectable popup does not close if user clicks out of window and loses focus
-			//must do manually
-			if (!Window::IsFocused()) {
-				ImGui::CloseCurrentPopup();
+		}
+
+		if (!user_.selected_league_.empty()) {
+			ImGui::Text("Stash Tab: ");
+			ImGui::SameLine();
+			if (ImGui::BeginCombo("##StashTabsCombo", selected_stash_index_ == -1 ? "Select a Stash Tab" : user_.stash_tab_list_[selected_stash_index_].c_str())) {
+				for (int i = 0; i < user_.stash_tab_list_.size(); i++) {
+					if (ImGui::Selectable(user_.stash_tab_list_[i].c_str())) {
+						selected_stash_index_ = i;
+						stash_items_ = api_handler_.GetStashItems(selected_stash_index_);
+						stash_item_prices_ = GetItemPrices();
+					}
+				}
+				//selectable popup does not close if user clicks out of window and loses focus
+				//must do manually
+				if (!Window::IsFocused()) {
+					ImGui::CloseCurrentPopup();
+				}
+				ImGui::EndCombo();
 			}
-			ImGui::EndCombo();
 		}
-	}
 
-	ImGui::Separator();
+		ImGui::Separator();
 
-	if (!stash_item_prices_.empty()) {
-		ImGui::BeginChildFrame(1, { (float)window_.width_, 300 });
-		for (const auto& item : stash_item_prices_) {
-			ImGui::Text(item.first.c_str());
-			ImGui::SameLine(200);
-			ImGui::Text("%.1f", item.second);
+		if (!stash_item_prices_.empty()) {
+			ImGui::BeginChildFrame(1, { (float)window_.width_, 300 });
+			for (const auto& item : stash_item_prices_) {
+				ImGui::Text(item.first.c_str());
+				ImGui::SameLine(200);
+				ImGui::Text("%.1f", item.second);
+			}
+			ImGui::EndChildFrame();
 		}
-		ImGui::EndChildFrame();
-	}
-	
-	ImGui::Text("Price Threshold: ");
-	ImGui::SameLine();
-	if (ImGui::InputInt("##PriceThreshold", &price_threshold_)) {
-		stash_item_prices_ = GetItemPrices();
-	}
 
-	if (!user_.selected_league_.empty()) {
-		if (ImGui::Button("Update Price Info")) {
-			 ninja_data_= api_handler_.GetPriceData(user_.selected_league_);
-			 stash_item_prices_ = GetItemPrices();
+		ImGui::Text("Price Threshold: ");
+		ImGui::SameLine();
+		if (ImGui::InputInt("##PriceThreshold", &price_threshold_)) {
+			stash_item_prices_ = GetItemPrices();
 		}
-	}
 
-	if (ImGui::Button("Save")) {
-		Save();
+		if (!user_.selected_league_.empty()) {
+			if (ImGui::Button("Update Price Info")) {
+				ninja_data_ = api_handler_.GetPriceData(user_.selected_league_);
+				stash_item_prices_ = GetItemPrices();
+			}
+		}
+
+		if (ImGui::Button("Save")) {
+			Save();
+		}
 	}
 
 	ImVec2 pos = ImGui::GetWindowPos();
@@ -183,6 +189,28 @@ void Application::Render()
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	glfwSwapBuffers(window_.glfw_window_);
+}
+
+void Application::RenderErrors()
+{
+	switch (errors_.top()) {
+		case Error::AccountError:
+		{
+			ImGui::Text("Unable to authenticate POESESSID. Please try again.");
+			if (ImGui::Button("OK")) {
+				errors_.pop();
+			}
+			break;
+		}
+		case Error::LeagueError:
+		{
+			ImGui::Text("Unable to authenticate POESESSID. Please try again.");
+			if (ImGui::Button("OK")) {
+				errors_.pop();
+			}
+		}
+
+	}
 }
 
 void Application::Save()
@@ -214,6 +242,7 @@ void Application::Load()
 		if (json.count("selectedLeague")) {
 			user_.selected_league_ = json["selectedLeague"];
 			if (!user_.selected_league_.empty()) {
+				ninja_data_ = api_handler_.GetPriceData(user_.selected_league_);
 				user_.stash_tab_list_ = api_handler_.GetStashTabList();
 			}
 		}

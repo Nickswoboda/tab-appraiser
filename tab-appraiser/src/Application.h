@@ -6,6 +6,7 @@
 #include <imgui.h>
 #include <string>
 #include <unordered_map>
+#include <stack>
 
 class Application
 {
@@ -20,6 +21,7 @@ public:
 
 	void Run();
 	void Render();
+	void RenderErrors();
 
 	void Save();
 	void Load();
@@ -31,8 +33,9 @@ private:
 	std::vector<std::string> stash_items_;
 	std::vector<std::pair<std::string, float>> stash_item_prices_;
 	std::unordered_map<std::string, float> ninja_data_;
-	int selected_stash_index_= 0;
+	int selected_stash_index_= -1;
 	int price_threshold_ = 0;
+	std::stack<Error> errors_;
 
 	UserData user_;
 	Window window_;
