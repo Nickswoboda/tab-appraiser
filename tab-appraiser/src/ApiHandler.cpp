@@ -14,8 +14,8 @@
 #include <array>
 #include <iostream>
 
-ApiHandler::ApiHandler(UserData& user, std::stack<Error>& errors)
-	:user_(user), errors_(errors)
+ApiHandler::ApiHandler(UserData& user)
+	:user_(user)
 {
 	poe_curl_handle_ = http_.CreateHandle();
 	ninja_curl_handle_ = http_.CreateHandle();
@@ -51,7 +51,7 @@ std::string ApiHandler::GetAccountName()
 	}
 
 	if (accnt_name.empty()) {
-		errors_.push(Error::AccountError);
+		error_msg_ = "Unable to get account name";
 	}
 	return accnt_name;
 }
@@ -77,7 +77,7 @@ std::vector<std::string> ApiHandler::GetCurrentLeagues()
 	}
 
 	if (leagues.empty()) {
-		errors_.push(Error::LeagueError);
+		error_msg_ = "Unable to load current league data";
 	}
 	return leagues;
 }
@@ -91,8 +91,7 @@ std::vector<std::string> ApiHandler::GetStashTabList()
 
 	std::vector<std::string> tab_list;
 	if (json.HasParseError()) {
-		std::cout << "Unable to parse stash tab list \n";
-		errors_.push(Error::StashListError);
+		error_msg_ = "Unable to get stash tab list \n";
 	}
 	else {
 		if (json.HasMember("tabs")) {
@@ -100,10 +99,13 @@ std::vector<std::string> ApiHandler::GetStashTabList()
 				tab_list.push_back(tab["n"].GetString());
 			}
 		}
+		else {
+			error_msg_ = "There are no tabs in this league";
+		}
 	}
 
-	if (tab_list.empty()) {
-	}
+
+
 	return tab_list;
 
 }
@@ -117,8 +119,7 @@ std::vector<std::string> ApiHandler::GetStashItems(int index)
 
 	std::vector<std::string> item_list;
 	if (json.HasParseError()) {
-		std::cout << "Unable to parse stash items\n";
-		errors_.push(Error::StashItemsError);
+		error_msg_ = "Unable to parse stash items";
 	}
 	else {
 		if (json.HasMember("items")) {
@@ -132,6 +133,9 @@ std::vector<std::string> ApiHandler::GetStashItems(int index)
 				else {
 					item_list.push_back(item["typeLine"].GetString());
 				}
+			}
+			if (item_list.empty()) {
+				error_msg_ = "There are no items in this tab";
 			}
 		}
 	}
@@ -193,7 +197,7 @@ std::unordered_map<std::string, float> ApiHandler::GetPriceData(const std::strin
 	}
 
 	if (price_info.empty()) {
-		errors_.push(Error::StashListError);
+		error_msg_ = "Unable to obtain poe.ninja price data";
 	}
 	return price_info;
 }

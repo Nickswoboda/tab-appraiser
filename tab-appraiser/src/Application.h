@@ -12,6 +12,15 @@ class Application
 {
 public:
 
+	enum class State 
+	{
+		GetLeagueData,
+		GetPriceData,
+		GetStashItems,
+		Error,
+		Render,
+	};
+
 	Application(int width, int height);
 	~Application();
 
@@ -21,7 +30,7 @@ public:
 
 	void Run();
 	void Render();
-	void RenderErrors();
+	void RenderStates();
 
 	void Save();
 	void Load();
@@ -35,7 +44,7 @@ private:
 	std::unordered_map<std::string, float> ninja_data_;
 	int selected_stash_index_= -1;
 	int price_threshold_ = 0;
-	std::stack<Error> errors_;
+	std::stack<State> state_stack_;
 
 	UserData user_;
 	Window window_;

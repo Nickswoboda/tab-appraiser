@@ -14,7 +14,7 @@
 #include <fstream>
 
 Application::Application(int width, int height)
-	:window_(width, height), api_handler_(user_, errors_)
+	:window_(width, height), api_handler_(user_)
 {
 	if (!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress))) {
 		std::cout << "could not load GLAD";
@@ -42,6 +42,25 @@ void Application::Run()
 {
 	while (!glfwWindowShouldClose(window_.glfw_window_) && running_)
 	{
+		if (state_stack_.top() == State::GetLeagueData) {
+			current_leagues_ = api_handler_.GetCurrentLeagues();
+			if (current_leagues_.empty()) {
+				state_stack_.push(State::Error);
+			}
+			else {
+				state_stack_.pop();
+			}
+		}
+		else if (state_stack_.top() == State::GetPriceData) {
+			ninja_data_ = api_handler_.GetPriceData(user_.selected_league_);
+			if (ninja_data_.empty()) {
+				state_stack_.push(State::Error);
+			}
+			else {
+				state_stack_.pop();
+			}
+		}
+
 		if (Window::IsFocused()) {
 			Render();
 		}
@@ -73,8 +92,32 @@ void Application::Render()
 	ImGui::Begin("Tab Appraiser", &running_, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
 	ImGui::Separator();
 
-	if (!errors_.empty()) {
-		RenderErrors();
+	RenderStates();
+	
+	ImVec2 pos = ImGui::GetWindowPos();
+	if (pos.x != 0.0f || pos.y != 0.0f) {
+		ImGui::SetWindowPos({ 0.0f, 0.0f });
+		window_.Move(pos.x, pos.y);
+	}
+
+	if (window_.height_ != ImGui::GetCursorPosY()) {
+		window_.ResizeHeight(ImGui::GetCursorPosY());
+	}
+	ImGui::End();
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	glfwSwapBuffers(window_.glfw_window_);
+}
+
+void Application::RenderStates()
+{
+	if (state_stack_.top() == State::Error) {
+		ImGui::Text(api_handler_.error_msg_.c_str());
+		if (ImGui::Button("Ok")) {
+			while (state_stack_.top() == State::Error) {
+				state_stack_.pop();
+			}
+		}
 	}
 	else {
 		ImGui::Text("Account: "); ImGui::SameLine(); ImGui::Text(user_.account_name_.c_str());
@@ -90,7 +133,12 @@ void Application::Render()
 
 			if (ImGui::Button("OK")) {
 				SetPOESESSID(sess_id_input);
-				changing_account_ = false;
+				if (user_.account_name_.empty()) {
+					state_stack_.push(State::Error);
+				}
+				else {
+					changing_account_ = false;
+				}
 			}
 			ImGui::SameLine();
 			if (ImGui::Button("Cancel")) {
@@ -98,22 +146,28 @@ void Application::Render()
 			}
 		}
 
-		if (!user_.account_name_.empty() && user_.account_name_ != "error") {
+		if (!user_.account_name_.empty()) {
 			ImGui::Text("League: ");
 			ImGui::SameLine();
 
-			static std::string combo_selection = user_.selected_league_.empty() ? "Select a League" : user_.selected_league_;
-			if (ImGui::BeginCombo("##LeagueCombo", combo_selection.c_str())) {
+			if (ImGui::BeginCombo("##LeagueCombo", user_.selected_league_.empty() ? "Select a League" : user_.selected_league_.c_str())) {
 				for (auto& league : current_leagues_) {
 					if (ImGui::Selectable(league.c_str())) {
-						combo_selection = league;
 						user_.selected_league_ = league;
+
 						user_.stash_tab_list_ = api_handler_.GetStashTabList();
 
-
-						ninja_data_ = api_handler_.GetPriceData(user_.selected_league_);
 						selected_stash_index_ = -1;
 						stash_item_prices_.clear();
+
+						if (user_.stash_tab_list_.empty()) {
+							state_stack_.push(State::Error);
+							user_.selected_league_.clear();
+						}
+						else {
+							state_stack_.push(State::GetPriceData);
+						}
+
 
 					}
 				}
@@ -126,6 +180,7 @@ void Application::Render()
 			}
 		}
 
+
 		if (!user_.selected_league_.empty()) {
 			ImGui::Text("Stash Tab: ");
 			ImGui::SameLine();
@@ -134,6 +189,9 @@ void Application::Render()
 					if (ImGui::Selectable(user_.stash_tab_list_[i].c_str())) {
 						selected_stash_index_ = i;
 						stash_items_ = api_handler_.GetStashItems(selected_stash_index_);
+						if (stash_items_.empty()) {
+							state_stack_.push(State::Error);
+						}
 						stash_item_prices_ = GetItemPrices();
 					}
 				}
@@ -166,7 +224,7 @@ void Application::Render()
 
 		if (!user_.selected_league_.empty()) {
 			if (ImGui::Button("Update Price Info")) {
-				ninja_data_ = api_handler_.GetPriceData(user_.selected_league_);
+				state_stack_.push(State::GetPriceData);
 				stash_item_prices_ = GetItemPrices();
 			}
 		}
@@ -174,42 +232,6 @@ void Application::Render()
 		if (ImGui::Button("Save")) {
 			Save();
 		}
-	}
-
-	ImVec2 pos = ImGui::GetWindowPos();
-	if (pos.x != 0.0f || pos.y != 0.0f) {
-		ImGui::SetWindowPos({ 0.0f, 0.0f });
-		window_.Move(pos.x, pos.y);
-	}
-
-	if (window_.height_ != ImGui::GetCursorPosY()) {
-		window_.ResizeHeight(ImGui::GetCursorPosY());
-	}
-	ImGui::End();
-	ImGui::Render();
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-	glfwSwapBuffers(window_.glfw_window_);
-}
-
-void Application::RenderErrors()
-{
-	switch (errors_.top()) {
-		case Error::AccountError:
-		{
-			ImGui::Text("Unable to authenticate POESESSID. Please try again.");
-			if (ImGui::Button("OK")) {
-				errors_.pop();
-			}
-			break;
-		}
-		case Error::LeagueError:
-		{
-			ImGui::Text("Unable to authenticate POESESSID. Please try again.");
-			if (ImGui::Button("OK")) {
-				errors_.pop();
-			}
-		}
-
 	}
 }
 
@@ -228,6 +250,7 @@ void Application::Save()
 
 void Application::Load()
 {
+	state_stack_.push(State::Render);
 	std::ifstream file("save-data.json");
 	if (file.is_open()) {
 		auto json = nlohmann::json::parse(file);
@@ -236,14 +259,23 @@ void Application::Load()
 			user_.POESESSID_ = json["POESESSID"];
 			if (!user_.POESESSID_.empty()) {
 				SetPOESESSID(user_.POESESSID_.c_str());
+				if (user_.account_name_.empty()) {
+					state_stack_.push(State::Error);
+				}
 			}
 		}
 
 		if (json.count("selectedLeague")) {
 			user_.selected_league_ = json["selectedLeague"];
 			if (!user_.selected_league_.empty()) {
-				ninja_data_ = api_handler_.GetPriceData(user_.selected_league_);
 				user_.stash_tab_list_ = api_handler_.GetStashTabList();
+				if (user_.stash_tab_list_.empty()) {
+					state_stack_.push(State::Error);
+					user_.selected_league_.clear();
+				}
+				else {
+					state_stack_.push(State::GetPriceData);
+				}
 			}
 		}
 
@@ -251,8 +283,8 @@ void Application::Load()
 			window_.Move(json["windowX"], json["windowY"]);
 		}
 	}
+	state_stack_.push(State::GetLeagueData);
 
-	current_leagues_ = api_handler_.GetCurrentLeagues();
 }
 
 void Application::SetImGuiStyle()
