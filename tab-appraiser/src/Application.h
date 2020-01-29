@@ -32,6 +32,8 @@ public:
 	void Render();
 	void RenderStates();
 
+	void LoadPriceData();
+
 	void Save();
 	void Load();
 
@@ -45,6 +47,7 @@ private:
 	int selected_stash_index_= -1;
 	int price_threshold_ = 0;
 	std::stack<State> state_stack_;
+	bool loading_price_data_ = false;
 
 	UserData user_;
 	Window window_;

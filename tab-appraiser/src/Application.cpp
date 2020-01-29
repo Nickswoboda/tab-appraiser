@@ -35,6 +35,7 @@ Application::Application(int width, int height)
 
 Application::~Application()
 {
+	Save();
 	glfwTerminate();
 }
 
@@ -44,19 +45,17 @@ void Application::Run()
 	{
 		if (state_stack_.top() == State::GetLeagueData) {
 			current_leagues_ = api_handler_.GetCurrentLeagues();
+
 			if (current_leagues_.empty()) {
 				state_stack_.push(State::Error);
 			}
 			else {
-				state_stack_.pop();
-			}
-		}
-		else if (state_stack_.top() == State::GetPriceData) {
-			ninja_data_ = api_handler_.GetPriceData(user_.selected_league_);
-			if (ninja_data_.empty()) {
-				state_stack_.push(State::Error);
-			}
-			else {
+				//clear loaded selected league if does not exist. i.e metamorph league ends.
+				if (!user_.selected_league_.empty()) {
+					if (std::find(current_leagues_.begin(), current_leagues_.end(), user_.selected_league_) == current_leagues_.end()) {
+						user_.selected_league_.clear();
+					}
+				}
 				state_stack_.pop();
 			}
 		}
@@ -92,7 +91,12 @@ void Application::Render()
 	ImGui::Begin("Tab Appraiser", &running_, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
 	ImGui::Separator();
 
-	RenderStates();
+	if (loading_price_data_) {
+		LoadPriceData();
+	}
+	else {
+		RenderStates();
+	}
 	
 	ImVec2 pos = ImGui::GetWindowPos();
 	if (pos.x != 0.0f || pos.y != 0.0f) {
@@ -113,8 +117,11 @@ void Application::RenderStates()
 {
 	if (state_stack_.top() == State::Error) {
 		ImGui::Text(api_handler_.error_msg_.c_str());
-		if (ImGui::Button("Ok")) {
-			while (state_stack_.top() == State::Error) {
+		if (ImGui::Button("Retry")) {
+			state_stack_.pop();
+		}
+		if (ImGui::Button("Back")) {
+			while (state_stack_.top() != State::Render) {
 				state_stack_.pop();
 			}
 		}
@@ -165,7 +172,7 @@ void Application::RenderStates()
 							user_.selected_league_.clear();
 						}
 						else {
-							state_stack_.push(State::GetPriceData);
+							loading_price_data_ = true;
 						}
 
 
@@ -207,7 +214,7 @@ void Application::RenderStates()
 		ImGui::Separator();
 
 		if (!stash_item_prices_.empty()) {
-			ImGui::BeginChildFrame(1, { (float)window_.width_, 300 });
+			ImGui::BeginChildFrame(1, { (float)window_.width_, 250 });
 			for (const auto& item : stash_item_prices_) {
 				ImGui::Text(item.first.c_str());
 				ImGui::SameLine(200);
@@ -215,6 +222,11 @@ void Application::RenderStates()
 			}
 			ImGui::EndChildFrame();
 		}
+		else if (!ninja_data_.empty() && selected_stash_index_ != -1){
+			ImGui::Text("No price data available.");
+		}
+
+		ImGui::Separator();
 
 		ImGui::Text("Price Threshold: ");
 		ImGui::SameLine();
@@ -222,17 +234,45 @@ void Application::RenderStates()
 			stash_item_prices_ = GetItemPrices();
 		}
 
-		if (!user_.selected_league_.empty()) {
+		if (!user_.selected_league_.empty() && !ninja_data_.empty()) {
 			if (ImGui::Button("Update Price Info")) {
-				state_stack_.push(State::GetPriceData);
+				loading_price_data_ = true;
 				stash_item_prices_ = GetItemPrices();
 			}
 		}
-
-		if (ImGui::Button("Save")) {
-			Save();
-		}
 	}
+}
+
+void Application::LoadPriceData()
+{
+	static int iteration = 0;
+	static std::array<const char*, 19> item_types = { "Currency", "Fragment",
+											"Watchstone", "Oil", "Incubator",
+											"Scarab", "Fossil", "Resonator",
+											"Essence", "DivinationCard", "Prophecy",
+											"SkillGem", "UniqueMap", "Map",
+											"UniqueJewel", "UniqueFlask", "UniqueWeapon",
+											"UniqueArmour", "UniqueAccessory" };
+
+	ImGui::Text("Loading Price Data");
+	ImGui::Text("%i / %i", iteration, item_types.size());
+
+	std::unordered_map<std::string, float> temp_data;
+	if (iteration < 2) {
+		temp_data = api_handler_.GetCurrencyPriceData(item_types[iteration]);
+	}
+	else if (iteration < item_types.size()){
+		temp_data = api_handler_.GetItemPriceData(item_types[iteration]);
+	}
+	else {
+		iteration = 0;
+		loading_price_data_ = false;
+		return;
+	}
+
+	ninja_data_.insert(temp_data.begin(), temp_data.end());
+
+	++iteration;
 }
 
 void Application::Save()
@@ -259,9 +299,6 @@ void Application::Load()
 			user_.POESESSID_ = json["POESESSID"];
 			if (!user_.POESESSID_.empty()) {
 				SetPOESESSID(user_.POESESSID_.c_str());
-				if (user_.account_name_.empty()) {
-					state_stack_.push(State::Error);
-				}
 			}
 		}
 
@@ -269,13 +306,8 @@ void Application::Load()
 			user_.selected_league_ = json["selectedLeague"];
 			if (!user_.selected_league_.empty()) {
 				user_.stash_tab_list_ = api_handler_.GetStashTabList();
-				if (user_.stash_tab_list_.empty()) {
-					state_stack_.push(State::Error);
-					user_.selected_league_.clear();
-				}
-				else {
-					state_stack_.push(State::GetPriceData);
-				}
+				loading_price_data_ = true;
+				
 			}
 		}
 
@@ -284,7 +316,6 @@ void Application::Load()
 		}
 	}
 	state_stack_.push(State::GetLeagueData);
-
 }
 
 void Application::SetImGuiStyle()
@@ -308,7 +339,7 @@ void Application::SetPOESESSID(const char* id)
 std::vector<std::pair<std::string, float>> Application::GetItemPrices()
 {
 	std::vector<std::pair<std::string, float>> item_price;
-
+	
 	for (const auto& item : stash_items_) {
 		if (ninja_data_.count(item)) {
 			if (ninja_data_[item] > price_threshold_) {

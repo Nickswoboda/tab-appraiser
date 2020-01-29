@@ -143,6 +143,56 @@ std::vector<std::string> ApiHandler::GetStashItems(int index)
 	return item_list;
 }
 
+std::unordered_map<std::string, float> ApiHandler::GetCurrencyPriceData(const char* item_type)
+{
+	static std::string base_url = "https://poe.ninja/api/data/";
+
+	auto league_encoded = user_.selected_league_;
+	if (league_encoded.find(" ") != std::string::npos) {
+		league_encoded.replace(user_.selected_league_.find(" "), 1, "%20");
+	}
+
+	auto data = http_.GetData(ninja_curl_handle_, base_url + "currencyoverview?league=" + league_encoded + "&type=" + item_type);
+	rapidjson::Document json;
+	json.ParseInsitu(data.data());
+
+	if (json.HasParseError()) {
+		std::cout << "Unable to parse " << user_.selected_league_ << " " << item_type << " price data \n";
+	}
+
+	std::unordered_map<std::string, float> price_info;
+	for (const auto& line : json["lines"].GetArray()) {
+		price_info[line["currencyTypeName"].GetString()] = line["chaosEquivalent"].GetFloat();
+	}
+
+	return price_info;
+}
+
+std::unordered_map<std::string, float> ApiHandler::GetItemPriceData(const char* item_type)
+{
+	static std::string base_url = "https://poe.ninja/api/data/";
+
+	auto league_encoded = user_.selected_league_;
+	if (league_encoded.find(" ") != std::string::npos) {
+		league_encoded.replace(user_.selected_league_.find(" "), 1, "%20");
+	}
+
+	auto data = http_.GetData(ninja_curl_handle_, base_url + "itemoverview?league=" + league_encoded + "&type=" + item_type);
+	rapidjson::Document json;
+	json.ParseInsitu(data.data());
+
+	if (json.HasParseError()) {
+		std::cout << "Unable to parse " << user_.selected_league_ << " " << item_type << " price data \n";
+	}
+
+	std::unordered_map<std::string, float> price_info;
+	for (const auto& line : json["lines"].GetArray()) {
+		price_info[line["name"].GetString()] = line["chaosValue"].GetFloat();
+	}
+
+	return price_info;
+}
+
 std::unordered_map<std::string, float> ApiHandler::GetPriceData(const std::string& league)
 {
 	static std::string base_url = "https://poe.ninja/api/data/";
@@ -156,9 +206,6 @@ std::unordered_map<std::string, float> ApiHandler::GetPriceData(const std::strin
 
 	std::unordered_map<std::string, float> price_info;
 
-	if (!std::filesystem::exists("PriceData/" + league)) {
-		std::filesystem::create_directories("PriceData/" + league);
-	}
 	auto league_encoded = league;
 	if (league_encoded.find(" ") != std::string::npos) {
 		league_encoded.replace(league.find(" "), 1, "%20");
