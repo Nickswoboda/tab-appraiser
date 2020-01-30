@@ -43,23 +43,6 @@ void Application::Run()
 {
 	while (!glfwWindowShouldClose(window_.glfw_window_) && running_)
 	{
-		if (state_stack_.top() == State::GetLeagueData) {
-			current_leagues_ = api_handler_.GetCurrentLeagues();
-
-			if (current_leagues_.empty()) {
-				state_stack_.push(State::Error);
-			}
-			else {
-				//clear loaded selected league if does not exist. i.e metamorph league ends.
-				if (!user_.selected_league_.empty()) {
-					if (std::find(current_leagues_.begin(), current_leagues_.end(), user_.selected_league_) == current_leagues_.end()) {
-						user_.selected_league_.clear();
-					}
-				}
-				state_stack_.pop();
-			}
-		}
-
 		if (Window::IsFocused()) {
 			Render();
 		}
@@ -92,10 +75,29 @@ void Application::Render()
 	ImGui::Separator();
 
 	if (loading_price_data_) {
-		LoadPriceData();
+		LoadStashAndPriceData();
 	}
 	else {
-		RenderStates();
+		RenderAccount();
+
+		if (!user_.account_name_.empty()) {
+			RenderLeagues();
+		}
+		if (!user_.selected_league_.empty()) {
+			if (ninja_data_.empty()) {
+				ImGui::Text("Unable to fetch price data");
+				if (ImGui::Button("Try Again")) {
+					LoadStashAndPriceData();
+				}
+			}
+			else{
+				RenderStashTabs();
+
+				if ((selected_stash_index_ != -1)) {
+					RenderPriceInfo();
+				}
+			}
+		}
 	}
 	
 	ImVec2 pos = ImGui::GetWindowPos();
@@ -113,139 +115,137 @@ void Application::Render()
 	glfwSwapBuffers(window_.glfw_window_);
 }
 
-void Application::RenderStates()
+void Application::RenderAccount()
 {
-	if (state_stack_.top() == State::Error) {
-		ImGui::Text(api_handler_.error_msg_.c_str());
-		if (ImGui::Button("Retry")) {
-			state_stack_.pop();
-		}
-		if (ImGui::Button("Back")) {
-			while (state_stack_.top() != State::Render) {
-				state_stack_.pop();
-			}
-		}
+	ImGui::Text("Account: "); ImGui::SameLine(); ImGui::Text(user_.account_name_.c_str());
+	ImGui::SameLine();
+	if (ImGui::Button("Change Account")) {
+		changing_account_ = true;
 	}
-	else {
-		ImGui::Text("Account: "); ImGui::SameLine(); ImGui::Text(user_.account_name_.c_str());
+
+	if (changing_account_) {
+		ImGui::Text("Please Enter Your POESESSID");
+		static char sess_id_input[100];
+		ImGui::InputText("##Input", sess_id_input, 100);
+
+		if (ImGui::Button("OK")) {
+			SetPOESESSID(sess_id_input);
+			changing_account_ = false;
+		}
 		ImGui::SameLine();
-		if (ImGui::Button("Change Account")) {
-			changing_account_ = true;
-		}
-
-		if (changing_account_) {
-			ImGui::Text("Please Enter Your POESESSID");
-			static char sess_id_input[100];
-			ImGui::InputText("##Input", sess_id_input, 100);
-
-			if (ImGui::Button("OK")) {
-				SetPOESESSID(sess_id_input);
-				if (user_.account_name_.empty()) {
-					state_stack_.push(State::Error);
-				}
-				else {
-					changing_account_ = false;
-				}
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Cancel")) {
-				changing_account_ = false;
-			}
-		}
-
-		if (!user_.account_name_.empty()) {
-			ImGui::Text("League: ");
-			ImGui::SameLine();
-
-			if (ImGui::BeginCombo("##LeagueCombo", user_.selected_league_.empty() ? "Select a League" : user_.selected_league_.c_str())) {
-				for (auto& league : current_leagues_) {
-					if (ImGui::Selectable(league.c_str())) {
-						user_.selected_league_ = league;
-
-						user_.stash_tab_list_ = api_handler_.GetStashTabList();
-
-						selected_stash_index_ = -1;
-						stash_item_prices_.clear();
-
-						if (user_.stash_tab_list_.empty()) {
-							state_stack_.push(State::Error);
-							user_.selected_league_.clear();
-						}
-						else {
-							loading_price_data_ = true;
-						}
-
-
-					}
-				}
-				//selectable popup does not close if user clicks out of window and loses focus
-				//must do manually
-				if (!Window::IsFocused()) {
-					ImGui::CloseCurrentPopup();
-				}
-				ImGui::EndCombo();
-			}
-		}
-
-
-		if (!user_.selected_league_.empty()) {
-			ImGui::Text("Stash Tab: ");
-			ImGui::SameLine();
-			if (ImGui::BeginCombo("##StashTabsCombo", selected_stash_index_ == -1 ? "Select a Stash Tab" : user_.stash_tab_list_[selected_stash_index_].c_str())) {
-				for (int i = 0; i < user_.stash_tab_list_.size(); i++) {
-					if (ImGui::Selectable(user_.stash_tab_list_[i].c_str())) {
-						selected_stash_index_ = i;
-						stash_items_ = api_handler_.GetStashItems(selected_stash_index_);
-						if (stash_items_.empty()) {
-							state_stack_.push(State::Error);
-						}
-						stash_item_prices_ = GetItemPrices();
-					}
-				}
-				//selectable popup does not close if user clicks out of window and loses focus
-				//must do manually
-				if (!Window::IsFocused()) {
-					ImGui::CloseCurrentPopup();
-				}
-				ImGui::EndCombo();
-			}
-		}
-
-		ImGui::Separator();
-
-		if (!stash_item_prices_.empty()) {
-			ImGui::BeginChildFrame(1, { (float)window_.width_, 250 });
-			for (const auto& item : stash_item_prices_) {
-				ImGui::Text(item.first.c_str());
-				ImGui::SameLine(200);
-				ImGui::Text("%.1f", item.second);
-			}
-			ImGui::EndChildFrame();
-		}
-		else if (!ninja_data_.empty() && selected_stash_index_ != -1){
-			ImGui::Text("No price data available.");
-		}
-
-		ImGui::Separator();
-
-		ImGui::Text("Price Threshold: ");
-		ImGui::SameLine();
-		if (ImGui::InputInt("##PriceThreshold", &price_threshold_)) {
-			stash_item_prices_ = GetItemPrices();
-		}
-
-		if (!user_.selected_league_.empty() && !ninja_data_.empty()) {
-			if (ImGui::Button("Update Price Info")) {
-				loading_price_data_ = true;
-				stash_item_prices_ = GetItemPrices();
-			}
+		if (ImGui::Button("Cancel")) {
+			changing_account_ = false;
 		}
 	}
 }
 
-void Application::LoadPriceData()
+void Application::RenderLeagues()
+{
+	ImGui::Text("League: ");
+	ImGui::SameLine();
+
+
+	if (current_leagues_.empty()) {
+		ImGui::Text("Unable to load current leagues."); 
+		ImGui::SameLine();
+		if (ImGui::Button("Try Again")) {
+			current_leagues_ = api_handler_.GetCurrentLeagues();
+		}
+	}
+	else if (ImGui::BeginCombo("##LeagueCombo", user_.selected_league_.empty() ? "Select a League" : user_.selected_league_.c_str())) {
+		for (auto& league : current_leagues_) {
+			if (ImGui::Selectable(league.c_str())) {
+				user_.selected_league_ = league;
+
+				user_.stash_tab_list_ = api_handler_.GetStashTabList();
+
+				selected_stash_index_ = -1;
+				stash_item_prices_.clear();
+
+				loading_price_data_ = true;
+			}
+		}
+		//selectable popup does not close if user clicks out of window and loses focus
+		//must do manually
+		if (!Window::IsFocused()) {
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndCombo();
+	}
+}
+
+void Application::RenderStashTabs()
+{
+	if (!user_.selected_league_.empty()) {
+		ImGui::Text("Stash Tab: ");
+		ImGui::SameLine();
+
+		if (user_.stash_tab_list_.empty()) {
+			ImGui::Text("No stash tabs found.");
+			ImGui::SameLine();
+			if (ImGui::Button("Try Again")) {
+				user_.stash_tab_list_ = api_handler_.GetStashTabList();
+			}
+		}
+		else if (ImGui::BeginCombo("##StashTabsCombo", selected_stash_index_ == -1 ? "Select a Stash Tab" : user_.stash_tab_list_[selected_stash_index_].c_str())) {
+			for (int i = 0; i < user_.stash_tab_list_.size(); i++) {
+				if (ImGui::Selectable(user_.stash_tab_list_[i].c_str())) {
+					selected_stash_index_ = i;
+					stash_items_ = api_handler_.GetStashItems(selected_stash_index_);
+					stash_item_prices_ = GetItemPrices();
+				}
+			}
+			//selectable popup does not close if user clicks out of window and loses focus
+			//must do manually
+			if (!Window::IsFocused()) {
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndCombo();
+		}
+	}
+}
+
+void Application::RenderPriceInfo()
+{
+	if (!stash_item_prices_.empty()) {
+		ImGui::BeginChildFrame(1, { (float)window_.width_, 250 });
+		for (const auto& item : stash_item_prices_) {
+			ImGui::Text(item.first.c_str());
+			ImGui::SameLine(200);
+			ImGui::Text("%.1f", item.second);
+		}
+		ImGui::EndChildFrame();
+	}
+	else if (!ninja_data_.empty() && selected_stash_index_ != -1) {
+		ImGui::Text("No price data available.");
+	}
+	ImGui::Text("Price Threshold: ");
+	ImGui::SameLine();
+	if (ImGui::InputInt("##PriceThreshold", &price_threshold_)) {
+		stash_item_prices_ = GetItemPrices();
+	}
+
+	if (!user_.selected_league_.empty() && !ninja_data_.empty()) {
+		if (ImGui::Button("Update Price Info")) {
+			loading_price_data_ = true;
+			stash_item_prices_ = GetItemPrices();
+		}
+	}
+}
+
+void Application::LoadStashAndPriceData()
 {
 	static int iteration = 0;
+
+	// don't waste time loading price data if there are no stash tabs for the league
+	if (iteration == 0) {
+		user_.stash_tab_list_ = api_handler_.GetStashTabList();
+		if (user_.stash_tab_list_.empty()) {
+			loading_price_data_ = false;
+			return;
+		}
+	}
+
 	static std::array<const char*, 19> item_types = { "Currency", "Fragment",
 											"Watchstone", "Oil", "Incubator",
 											"Scarab", "Fossil", "Resonator",
@@ -271,8 +271,8 @@ void Application::LoadPriceData()
 	}
 
 	ninja_data_.insert(temp_data.begin(), temp_data.end());
-
 	++iteration;
+
 }
 
 void Application::Save()
@@ -290,7 +290,8 @@ void Application::Save()
 
 void Application::Load()
 {
-	state_stack_.push(State::Render);
+	current_leagues_ = api_handler_.GetCurrentLeagues();
+
 	std::ifstream file("save-data.json");
 	if (file.is_open()) {
 		auto json = nlohmann::json::parse(file);
@@ -305,9 +306,12 @@ void Application::Load()
 		if (json.count("selectedLeague")) {
 			user_.selected_league_ = json["selectedLeague"];
 			if (!user_.selected_league_.empty()) {
-				user_.stash_tab_list_ = api_handler_.GetStashTabList();
 				loading_price_data_ = true;
 				
+				//make sure loaded league is valid
+				if (std::find(current_leagues_.begin(), current_leagues_.end(), user_.selected_league_) == current_leagues_.end()) {
+					user_.selected_league_.clear();
+				}
 			}
 		}
 
@@ -315,7 +319,6 @@ void Application::Load()
 			window_.Move(json["windowX"], json["windowY"]);
 		}
 	}
-	state_stack_.push(State::GetLeagueData);
 }
 
 void Application::SetImGuiStyle()

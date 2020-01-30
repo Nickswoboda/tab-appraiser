@@ -51,7 +51,7 @@ std::string ApiHandler::GetAccountName()
 	}
 
 	if (accnt_name.empty()) {
-		error_msg_ = "Unable to get account name";
+		std::cout << "Unable to get account name";
 	}
 	return accnt_name;
 }
@@ -77,7 +77,7 @@ std::vector<std::string> ApiHandler::GetCurrentLeagues()
 	}
 
 	if (leagues.empty()) {
-		error_msg_ = "Unable to load current league data";
+		std::cout << "Unable to load current league data";
 	}
 	return leagues;
 }
@@ -91,7 +91,7 @@ std::vector<std::string> ApiHandler::GetStashTabList()
 
 	std::vector<std::string> tab_list;
 	if (json.HasParseError()) {
-		error_msg_ = "Unable to get stash tab list \n";
+		std::cout << "Unable to get stash tab list \n";
 	}
 	else {
 		if (json.HasMember("tabs")) {
@@ -100,7 +100,7 @@ std::vector<std::string> ApiHandler::GetStashTabList()
 			}
 		}
 		else {
-			error_msg_ = "There are no tabs in this league";
+			std::cout << "There are no tabs in this league";
 		}
 	}
 
@@ -119,7 +119,7 @@ std::vector<std::string> ApiHandler::GetStashItems(int index)
 
 	std::vector<std::string> item_list;
 	if (json.HasParseError()) {
-		error_msg_ = "Unable to parse stash items";
+		std::cout << "Unable to parse stash items";
 	}
 	else {
 		if (json.HasMember("items")) {
@@ -135,7 +135,7 @@ std::vector<std::string> ApiHandler::GetStashItems(int index)
 				}
 			}
 			if (item_list.empty()) {
-				error_msg_ = "There are no items in this tab";
+				std::cout << "There are no items in this tab";
 			}
 		}
 	}
@@ -152,6 +152,7 @@ std::unordered_map<std::string, float> ApiHandler::GetCurrencyPriceData(const ch
 		league_encoded.replace(user_.selected_league_.find(" "), 1, "%20");
 	}
 
+	std::unordered_map<std::string, float> price_info;
 	auto data = http_.GetData(ninja_curl_handle_, base_url + "currencyoverview?league=" + league_encoded + "&type=" + item_type);
 	rapidjson::Document json;
 	json.ParseInsitu(data.data());
@@ -159,10 +160,10 @@ std::unordered_map<std::string, float> ApiHandler::GetCurrencyPriceData(const ch
 	if (json.HasParseError()) {
 		std::cout << "Unable to parse " << user_.selected_league_ << " " << item_type << " price data \n";
 	}
-
-	std::unordered_map<std::string, float> price_info;
-	for (const auto& line : json["lines"].GetArray()) {
-		price_info[line["currencyTypeName"].GetString()] = line["chaosEquivalent"].GetFloat();
+	else if (json.HasMember("lines")) {
+		for (const auto& line : json["lines"].GetArray()) {
+			price_info[line["currencyTypeName"].GetString()] = line["chaosEquivalent"].GetFloat();
+		}
 	}
 
 	return price_info;
@@ -177,6 +178,7 @@ std::unordered_map<std::string, float> ApiHandler::GetItemPriceData(const char* 
 		league_encoded.replace(user_.selected_league_.find(" "), 1, "%20");
 	}
 
+	std::unordered_map<std::string, float> price_info;
 	auto data = http_.GetData(ninja_curl_handle_, base_url + "itemoverview?league=" + league_encoded + "&type=" + item_type);
 	rapidjson::Document json;
 	json.ParseInsitu(data.data());
@@ -184,67 +186,11 @@ std::unordered_map<std::string, float> ApiHandler::GetItemPriceData(const char* 
 	if (json.HasParseError()) {
 		std::cout << "Unable to parse " << user_.selected_league_ << " " << item_type << " price data \n";
 	}
-
-	std::unordered_map<std::string, float> price_info;
-	for (const auto& line : json["lines"].GetArray()) {
-		price_info[line["name"].GetString()] = line["chaosValue"].GetFloat();
-	}
-
-	return price_info;
-}
-
-std::unordered_map<std::string, float> ApiHandler::GetPriceData(const std::string& league)
-{
-	static std::string base_url = "https://poe.ninja/api/data/";
-	static std::array<std::string, 2> currencies = { "Currency", "Fragment" };
-	static std::array<std::string, 17> items = { "Watchstone", "Oil", "Incubator", 
-											"Scarab", "Fossil", "Resonator", 
-											"Essence", "DivinationCard", "Prophecy", 
-											"SkillGem", "UniqueMap", "Map", 
-											"UniqueJewel", "UniqueFlask", "UniqueWeapon", 
-											"UniqueArmour", "UniqueAccessory"};
-
-	std::unordered_map<std::string, float> price_info;
-
-	auto league_encoded = league;
-	if (league_encoded.find(" ") != std::string::npos) {
-		league_encoded.replace(league.find(" "), 1, "%20");
-	}
-
-	for (const auto& currency : currencies) {
-
-		auto data = http_.GetData(ninja_curl_handle_, base_url + "currencyoverview?league=" + league_encoded + "&type=" + currency);
-		rapidjson::Document json;
-		json.ParseInsitu(data.data());
-
-		if (json.HasParseError()) {
-			std::cout << "Unable to parse " << league << " " << currency << " price data \n";
-			continue;
-		}
-
-		for (const auto& line : json["lines"].GetArray()){
-			price_info[line["currencyTypeName"].GetString()] = line["chaosEquivalent"].GetFloat();
-		}
-	}
-
-	for (const auto& item : items) {
-		auto data = http_.GetData(ninja_curl_handle_, base_url + "itemoverview?league=" + league_encoded + "&type=" + item);
-		rapidjson::Document json;
-		json.ParseInsitu(data.data());
-		
-		if (json.HasParseError()) {
-			std::cout << "Unable to parse " << league << " " << item << " price data \n";
-			continue;
-		}
-
+	else if (json.HasMember("lines")) {
 		for (const auto& line : json["lines"].GetArray()) {
 			price_info[line["name"].GetString()] = line["chaosValue"].GetFloat();
 		}
-	
 	}
 
-	if (price_info.empty()) {
-		error_msg_ = "Unable to obtain poe.ninja price data";
-	}
 	return price_info;
 }

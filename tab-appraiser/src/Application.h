@@ -30,9 +30,11 @@ public:
 
 	void Run();
 	void Render();
-	void RenderStates();
-
-	void LoadPriceData();
+	void RenderAccount();
+	void RenderLeagues();
+	void RenderStashTabs();
+	void RenderPriceInfo();
+	void LoadStashAndPriceData();
 
 	void Save();
 	void Load();
@@ -46,7 +48,6 @@ private:
 	std::unordered_map<std::string, float> ninja_data_;
 	int selected_stash_index_= -1;
 	int price_threshold_ = 0;
-	std::stack<State> state_stack_;
 	bool loading_price_data_ = false;
 
 	UserData user_;
