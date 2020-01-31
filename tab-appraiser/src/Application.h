@@ -34,7 +34,8 @@ public:
 	void RenderLeagues();
 	void RenderStashTabs();
 	void RenderPriceInfo();
-	void LoadStashAndPriceData();
+	void LoadPriceData();
+	void SetSelectedLeague(const std::string& league);
 
 	void Save();
 	void Load();

@@ -19,7 +19,6 @@ ApiHandler::ApiHandler(UserData& user)
 {
 	poe_curl_handle_ = http_.CreateHandle();
 	ninja_curl_handle_ = http_.CreateHandle();
-
 	http_.SetVerbose(poe_curl_handle_, true);
 	http_.SetVerbose(ninja_curl_handle_, true);
 }
@@ -34,13 +33,13 @@ std::string ApiHandler::GetAccountName()
 	SetPOESESSIDCookie();
 
 	auto data = http_.GetData(poe_curl_handle_, "https://www.pathofexile.com/my-account");
-	std::string temp = "/account/view-profile/";
-	const int temp_length = 22;
+	std::string token = "/account/view-profile/";
+	const int token_length = 22;
 
 	std::string accnt_name;
-	auto temp_pos = data.find(temp);
-	if (temp_pos != std::string::npos) {
-		auto substring = data.substr(temp_pos + temp_length, 100);
+	auto pos = data.find(token);
+	if (pos != std::string::npos) {
+		auto substring = data.substr(pos + token_length, 50);
 
 		for (auto& character : substring) {
 			if (character == '\"') {
@@ -104,10 +103,7 @@ std::vector<std::string> ApiHandler::GetStashTabList()
 		}
 	}
 
-
-
 	return tab_list;
-
 }
 
 std::vector<std::string> ApiHandler::GetStashItems(int index)
@@ -143,52 +139,35 @@ std::vector<std::string> ApiHandler::GetStashItems(int index)
 	return item_list;
 }
 
-std::unordered_map<std::string, float> ApiHandler::GetCurrencyPriceData(const char* item_type)
+std::unordered_map<std::string, float> ApiHandler::GetPriceData(const char* item_type)
 {
-	static std::string base_url = "https://poe.ninja/api/data/";
-
-	auto league_encoded = user_.selected_league_;
-	if (league_encoded.find(" ") != std::string::npos) {
-		league_encoded.replace(user_.selected_league_.find(" "), 1, "%20");
+	std::string url;
+	if (item_type == "Currency" || item_type == "Fragment") {
+		url = ninja_base_url + "currencyoverview?league=" + league_encoded_ + "&type=" + item_type;
+	}
+	else {
+		url = ninja_base_url + "itemoverview?league=" + league_encoded_ + "&type=" + item_type;
 	}
 
-	std::unordered_map<std::string, float> price_info;
-	auto data = http_.GetData(ninja_curl_handle_, base_url + "currencyoverview?league=" + league_encoded + "&type=" + item_type);
+	auto data = http_.GetData(ninja_curl_handle_, url);
+
 	rapidjson::Document json;
 	json.ParseInsitu(data.data());
+	std::unordered_map<std::string, float> price_info;
 
 	if (json.HasParseError()) {
 		std::cout << "Unable to parse " << user_.selected_league_ << " " << item_type << " price data \n";
 	}
 	else if (json.HasMember("lines")) {
-		for (const auto& line : json["lines"].GetArray()) {
-			price_info[line["currencyTypeName"].GetString()] = line["chaosEquivalent"].GetFloat();
+		if (item_type == "Currency" || item_type == "Fragment") {
+			for (const auto& line : json["lines"].GetArray()) {
+				price_info[line["currencyTypeName"].GetString()] = line["chaosEquivalent"].GetFloat();
+			}
 		}
-	}
-
-	return price_info;
-}
-
-std::unordered_map<std::string, float> ApiHandler::GetItemPriceData(const char* item_type)
-{
-	static std::string base_url = "https://poe.ninja/api/data/";
-
-	auto league_encoded = user_.selected_league_;
-	if (league_encoded.find(" ") != std::string::npos) {
-		league_encoded.replace(user_.selected_league_.find(" "), 1, "%20");
-	}
-
-	std::unordered_map<std::string, float> price_info;
-	auto data = http_.GetData(ninja_curl_handle_, base_url + "itemoverview?league=" + league_encoded + "&type=" + item_type);
-	rapidjson::Document json;
-	json.ParseInsitu(data.data());
-
-	if (json.HasParseError()) {
-		std::cout << "Unable to parse " << user_.selected_league_ << " " << item_type << " price data \n";
-	}
-	else if (json.HasMember("lines")) {
-		for (const auto& line : json["lines"].GetArray()) {
-			price_info[line["name"].GetString()] = line["chaosValue"].GetFloat();
+		else{
+			for (const auto& line : json["lines"].GetArray()) {
+				price_info[line["name"].GetString()] = line["chaosValue"].GetFloat();
+			}
 		}
 	}
 
