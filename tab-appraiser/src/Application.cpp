@@ -243,8 +243,6 @@ void Application::RenderPriceInfo()
 		}
 		stash_item_prices_ = GetItemPrices();
 	}
-	ImGui::SameLine();
-	ImGui::Text("Chaos");
 
 	if (!user_.selected_league_.empty() && !ninja_data_.empty()) {
 		if (ImGui::Button("Update Price Data")) {
