@@ -124,10 +124,14 @@ std::vector<std::string> ApiHandler::GetStashItems(int index)
 					continue;
 				}
 				if (item["name"] != "") {
-					item_list.push_back(item["name"].GetString());
+					if (std::find(item_list.begin(), item_list.end(), item["name"].GetString()) == item_list.end()) {
+						item_list.push_back(item["name"].GetString());
+					}
 				}
 				else {
-					item_list.push_back(item["typeLine"].GetString());
+					if (std::find(item_list.begin(), item_list.end(), item["typeLine"].GetString()) == item_list.end()) {
+						item_list.push_back(item["typeLine"].GetString());
+					}
 				}
 			}
 			if (item_list.empty()) {
@@ -161,7 +165,22 @@ std::unordered_map<std::string, float> ApiHandler::GetPriceData(const char* item
 	else if (json.HasMember("lines")) {
 		if (item_type == "Currency" || item_type == "Fragment") {
 			for (const auto& line : json["lines"].GetArray()) {
-				price_info[line["currencyTypeName"].GetString()] = line["chaosEquivalent"].GetFloat();
+
+				//don't show low confidence values
+				auto pay_count = line["pay"].HasMember("count") ? line["pay"]["count"].GetFloat() : 0;
+				auto receive_count = line["receive"].HasMember("count") ? line["receive"]["count"].GetFloat() : 0;
+				if ((pay_count < 5) != (receive_count < 5)) {
+					if (pay_count < 5) {
+						price_info[line["currencyTypeName"].GetString()] = line["receive"]["value"].GetFloat();
+					}
+					else{
+						price_info[line["currencyTypeName"].GetString()] = line["pay"]["value"].GetFloat();
+					}
+
+				}
+				else {
+					price_info[line["currencyTypeName"].GetString()] = line["chaosEquivalent"].GetFloat();
+				}
 			}
 		}
 		else{

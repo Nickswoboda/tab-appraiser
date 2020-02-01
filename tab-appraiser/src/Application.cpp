@@ -220,18 +220,20 @@ void Application::RenderStashTabs()
 
 void Application::RenderPriceInfo()
 {
+	ImGui::Separator();
 	if (!stash_item_prices_.empty()) {
 		ImGui::BeginChildFrame(1, { (float)window_.width_, 250 });
 		for (const auto& item : stash_item_prices_) {
 			ImGui::Text(item.first.c_str());
-			ImGui::SameLine(200);
-			ImGui::Text("%.1f", item.second);
+			ImGui::SameLine(250);
+			ImGui::Text("%.1f C", item.second);
 		}
 		ImGui::EndChildFrame();
 	}
 	else if (!ninja_data_.empty() && selected_stash_index_ != -1) {
 		ImGui::Text("No price data available.");
 	}
+	ImGui::Separator();
 
 	ImGui::Text("Price Threshold: ");
 	ImGui::SameLine();
@@ -241,9 +243,11 @@ void Application::RenderPriceInfo()
 		}
 		stash_item_prices_ = GetItemPrices();
 	}
+	ImGui::SameLine();
+	ImGui::Text("Chaos");
 
 	if (!user_.selected_league_.empty() && !ninja_data_.empty()) {
-		if (ImGui::Button("Update Price Info")) {
+		if (ImGui::Button("Update Price Data")) {
 			loading_price_data_ = true;
 		}
 	}
@@ -253,17 +257,19 @@ void Application::LoadPriceData()
 {
 	static int iteration = 0;
 
-	static std::array<const char*, 19> item_types = { "Currency", "Fragment",
+	static std::array<const char*, 18> item_types = { "Currency", "Fragment",
 											"Watchstone", "Oil", "Incubator",
 											"Scarab", "Fossil", "Resonator",
 											"Essence", "DivinationCard", "Prophecy",
-											"SkillGem", "UniqueMap", "Map",
-											"UniqueJewel", "UniqueFlask", "UniqueWeapon",
-											"UniqueArmour", "UniqueAccessory" };
+											"UniqueMap", "Map", "UniqueJewel", 
+											"UniqueFlask", "UniqueWeapon", "UniqueArmour", 
+											"UniqueAccessory" };
 
-	std::unordered_map<std::string, float> temp_data;
-	if (iteration < item_types.size()){
-		temp_data = api_handler_.GetPriceData(item_types[iteration]);
+	if (iteration < item_types.size()) {
+		auto temp_data = api_handler_.GetPriceData(item_types[iteration]);
+		ninja_data_.insert(temp_data.begin(), temp_data.end());
+		ImGui::Text("Loading %s %s Data", user_.selected_league_.c_str(), item_types[iteration]);
+		++iteration;
 	}
 	else {
 		iteration = 0;
@@ -271,10 +277,6 @@ void Application::LoadPriceData()
 		return;
 	}
 
-	ImGui::Text("Loading %s %s Data", user_.selected_league_.c_str(), item_types[iteration]);
-
-	ninja_data_.insert(temp_data.begin(), temp_data.end());
-	++iteration;
 }
 
 void Application::SetSelectedLeague(const std::string& league)
@@ -285,6 +287,9 @@ void Application::SetSelectedLeague(const std::string& league)
 	if (league.find(" ") != std::string::npos) {
 		api_handler_.league_encoded_.replace(league.find(" "), 1, "%20");
 	}
+
+	//reset price data;
+	ninja_data_.clear();
 }
 
 void Application::Save()
@@ -360,7 +365,7 @@ std::vector<std::pair<std::string, float>> Application::GetItemPrices()
 	std::vector<std::pair<std::string, float>> item_price;
 	
 	for (const auto& item : stash_items_) {
-		if (ninja_data_.count(item) && (ninja_data_[item] > price_threshold_)) {
+		if (ninja_data_.count(item) && (ninja_data_[item] >= price_threshold_)) {
 			item_price.push_back({ item, ninja_data_[item] });
 		}
 	}
