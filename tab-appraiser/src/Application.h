@@ -34,6 +34,7 @@ public:
 	void RenderLeagues();
 	void RenderStashTabs();
 	void RenderPriceInfo();
+	void RenderSettingsMenu();
 	void LoadPriceData();
 	void SetSelectedLeague(const std::string& league);
 
@@ -50,6 +51,9 @@ private:
 	int selected_stash_index_= -1;
 	int price_threshold_ = 0;
 	bool loading_price_data_ = false;
+	int font_size_ = 16;
+	bool font_size_changed_ = false;
+	bool settings_open_ = false;
 
 	UserData user_;
 	Window window_;

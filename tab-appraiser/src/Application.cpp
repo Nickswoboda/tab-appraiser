@@ -12,6 +12,7 @@
 #include <iomanip>
 #include <iostream>
 #include <fstream>
+#include <filesystem>
 
 Application::Application(int width, int height)
 	:window_(width, height), api_handler_(user_)
@@ -24,13 +25,17 @@ Application::Application(int width, int height)
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 
+	Load();
+	if (std::filesystem::exists("assets/fonts/Roboto-Medium.ttf")) {
+		io.Fonts->AddFontFromFileTTF("assets/fonts/Roboto-Medium.ttf", font_size_);
+	}
+
 	ImGui_ImplGlfw_InitForOpenGL(window_.glfw_window_, true);
 	ImGui_ImplOpenGL3_Init("#version 410");
 
 	SetImGuiStyle();
 	
 	glfwSetWindowUserPointer(window_.glfw_window_, this);
-	Load();
 }
 
 Application::~Application()
@@ -48,6 +53,17 @@ void Application::Run()
 		}
 
 		glfwPollEvents();
+
+		//Must change font outside of ImGui Rendering
+		if (font_size_changed_) {
+			font_size_changed_ = false;
+
+			ImGuiIO& io = ImGui::GetIO();
+			delete io.Fonts;
+			io.Fonts = new ImFontAtlas();
+			io.Fonts->AddFontFromFileTTF("assets/fonts/Roboto-Medium.ttf", font_size_);
+			ImGui_ImplOpenGL3_CreateFontsTexture();
+		}
 	}
 
 }
@@ -62,8 +78,11 @@ void Application::Render()
 	ImGui::SetNextWindowSize({ (float)window_.width_, (float)window_.height_ });
 	ImGui::Begin("Tab Appraiser", &running_, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
 	ImGui::Separator();
-
-	if (loading_price_data_) {
+	
+	if (settings_open_) {
+		RenderSettingsMenu();
+	}
+	else if (loading_price_data_) {
 		LoadPriceData();
 	}
 	else {
@@ -91,6 +110,9 @@ void Application::Render()
 				}
 			}
 		}
+	}
+	if (!settings_open_ && ImGui::Button("Settings")) {
+		settings_open_ = true;
 	}
 	
 	ImVec2 pos = ImGui::GetWindowPos();
@@ -225,7 +247,7 @@ void Application::RenderPriceInfo()
 		ImGui::BeginChildFrame(1, { (float)window_.width_, 250 });
 		for (const auto& item : stash_item_prices_) {
 			ImGui::Text(item.first.c_str());
-			ImGui::SameLine(250);
+			ImGui::SameLine(window_.width_ - 150);
 			ImGui::Text("%.1f C", item.second);
 		}
 		ImGui::EndChildFrame();
@@ -248,6 +270,24 @@ void Application::RenderPriceInfo()
 		if (ImGui::Button("Update Price Data")) {
 			loading_price_data_ = true;
 		}
+	}
+}
+
+void Application::RenderSettingsMenu()
+{
+	ImGui::TextWrapped("Font Size");
+	ImGui::PushItemWidth(window_.width_);
+	if (ImGui::DragInt("##font", &font_size_, 1.0f, 10, 32)) {
+		font_size_changed_ = true;
+	}
+	ImGui::TextWrapped("Window Width");
+	if (ImGui::DragInt("##width", &window_.width_, 1.0f, 400, 1000)) {
+		window_.UpdateSize();
+	}
+	ImGui::PopItemWidth();
+
+	if (ImGui::Button("Back")) {
+		settings_open_ = false;
 	}
 }
 
@@ -299,6 +339,8 @@ void Application::Save()
 		json["selectedLeague"] = user_.selected_league_;
 		json["windowX"] = window_.x_pos_;
 		json["windowY"] = window_.y_pos_;
+		json["windowWidth"] = window_.width_;
+		json["fontSize"] = font_size_;
 
 		file << std::setw(4) << json << std::endl;
 	}
@@ -336,6 +378,12 @@ void Application::Load()
 
 		if (json.count("windowX") && json.count("windowY")) {
 			window_.Move(json["windowX"], json["windowY"]);
+		}
+		if (json.count("windowWidth")) {
+			window_.width_ = json["windowWidth"];
+		}
+		if (json.count("fontSize")) {
+			font_size_ = json["fontSize"];
 		}
 	}
 }
