@@ -19,8 +19,8 @@ ApiHandler::ApiHandler(UserData& user)
 {
 	poe_curl_handle_ = http_.CreateHandle();
 	ninja_curl_handle_ = http_.CreateHandle();
-	http_.SetVerbose(poe_curl_handle_, true);
-	http_.SetVerbose(ninja_curl_handle_, true);
+	//http_.SetVerbose(poe_curl_handle_, true);
+	//http_.SetVerbose(ninja_curl_handle_, true);
 }
 
 void ApiHandler::SetPOESESSIDCookie()
