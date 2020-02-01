@@ -9,8 +9,8 @@ The overlay uses the [pathofexile.com](https://www.pathofexile.com/) and [poe.ni
  
 ## Download and Run
 1. Go to the [Releases](https://github.com/Nickswoboda/tab-appraiser/releases) section.
-2. Download the tab-appraiser.zip file.
-3. Extract .zip file to your desired location.
+2. Download the TabAppraiser.zip file.
+3. Extract the .zip file to your desired location.
 4. Run the .exe file
 
 In order for the overlay to be displayed, the Path of Exile game must not be in full screen mode.
