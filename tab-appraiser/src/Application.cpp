@@ -48,7 +48,7 @@ void Application::Run()
 {
 	while (!glfwWindowShouldClose(window_.glfw_window_) && running_)
 	{
-		if (Window::IsFocused()) {
+		if (Window::IsFocused() || loading_price_data_) {
 			Render();
 		}
 
@@ -225,11 +225,13 @@ void Application::RenderStashTabs()
 	}
 	else if (ImGui::BeginCombo("##StashTabsCombo", selected_stash_index_ == -1 ? "Select a Stash Tab" : user_.stash_tab_list_[selected_stash_index_].c_str())) {
 		for (int i = 0; i < user_.stash_tab_list_.size(); i++) {
+			ImGui::PushID(i);
 			if (ImGui::Selectable(user_.stash_tab_list_[i].c_str())) {
 				selected_stash_index_ = i;
 				stash_items_ = api_handler_.GetStashItems(selected_stash_index_);
 				stash_item_prices_ = GetItemPrices();
 			}
+			ImGui::PopID();
 		}
 		//selectable popup does not close if user clicks out of window and loses focus
 		//must do manually
@@ -245,10 +247,22 @@ void Application::RenderPriceInfo()
 	ImGui::Separator();
 	if (!stash_item_prices_.empty()) {
 		ImGui::BeginChildFrame(1, { (float)window_.width_, 250 });
-		for (const auto& item : stash_item_prices_) {
-			ImGui::Text(item.first.c_str());
-			ImGui::SameLine(window_.width_ - 150);
-			ImGui::Text("%.1f C", item.second);
+
+		int id = 0;
+		for (auto i = stash_item_prices_.begin(); i != stash_item_prices_.end();) {
+			ImGui::PushID(id);
+			if (ImGui::Button("X", { font_size_ + 2.0f, font_size_ + 2.0f })) {
+				i = stash_item_prices_.erase(i);
+			}
+			else {
+				ImGui::SameLine();
+				ImGui::Text(i->first.c_str());
+				ImGui::SameLine(window_.width_ - 150);
+				ImGui::Text("%.1f C", i->second);
+				++i;
+				++id;
+			}
+			ImGui::PopID();
 		}
 		ImGui::EndChildFrame();
 	}
@@ -295,13 +309,13 @@ void Application::LoadPriceData()
 {
 	static int iteration = 0;
 
-	static std::array<const char*, 18> item_types = { "Currency", "Fragment",
-											"Watchstone", "Oil", "Incubator",
-											"Scarab", "Fossil", "Resonator",
-											"Essence", "DivinationCard", "Prophecy",
-											"UniqueMap", "Map", "UniqueJewel", 
-											"UniqueFlask", "UniqueWeapon", "UniqueArmour", 
-											"UniqueAccessory" };
+	static std::array<const char*, 19> item_types = { "Currency", "Fragment",
+											"DeliriumOrb", "Watchstone", "Oil", 
+											"Incubator", "Scarab", "Fossil", 
+											"Resonator", "Essence", "DivinationCard", 
+											"Prophecy", "UniqueMap", "Map", 
+											"UniqueJewel", "UniqueFlask", "UniqueWeapon", 
+											"UniqueArmour", "UniqueAccessory" };
 
 	if (iteration < item_types.size()) {
 		auto temp_data = api_handler_.GetPriceData(item_types[iteration]);
