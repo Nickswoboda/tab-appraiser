@@ -1,3 +1,5 @@
+![Image](https://i.imgur.com/c9cUGRK.png)
+
 # Tab Appraiser
 Tab Appraiser is an overlay stash tab price checker for the game [Path of Exile](https://www.pathofexile.com/).
 
