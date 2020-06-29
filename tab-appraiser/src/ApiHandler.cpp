@@ -83,8 +83,14 @@ std::vector<std::string> ApiHandler::GetCurrentLeagues()
 
 std::vector<std::string> ApiHandler::GetStashTabList()
 {
+	std::string league_name = user_.selected_league_;
+
+	if (league_name.find(" ") != std::string::npos) {
+		league_name.replace(league_name.find(" "), 1, "+");
+	}
 	auto data = http_.GetData(poe_curl_handle_, 
-		"https://www.pathofexile.com/character-window/get-stash-items?accountName=" + user_.account_name_ + "&realm=pc&league=" + user_.selected_league_ + "&tabs=1&tabIndex=0");
+		"https://www.pathofexile.com/character-window/get-stash-items?accountName=" + user_.account_name_ + "&realm=pc&league=" + league_name + "&tabs=1&tabIndex=0");
+
 	rapidjson::Document json;
 	json.ParseInsitu(data.data());
 
@@ -108,8 +114,13 @@ std::vector<std::string> ApiHandler::GetStashTabList()
 
 std::vector<std::string> ApiHandler::GetStashItems(int index)
 {
+	std::string league_name = user_.selected_league_;
+
+	if (league_name.find(" ") != std::string::npos) {
+		league_name.replace(league_name.find(" "), 1, "+");
+	}
 	auto data = http_.GetData(poe_curl_handle_, 
-		"https://www.pathofexile.com/character-window/get-stash-items?accountName=" + user_.account_name_ + "&realm=pc&league=" + user_.selected_league_ + "&tabs=0&tabIndex=" + std::to_string(index));
+		"https://www.pathofexile.com/character-window/get-stash-items?accountName=" + user_.account_name_ + "&realm=pc&league=" + league_name + "&tabs=0&tabIndex=" + std::to_string(index));
 	rapidjson::Document json;
 	json.ParseInsitu(data.data());
 
@@ -166,20 +177,38 @@ std::unordered_map<std::string, float> ApiHandler::GetPriceData(const char* item
 		if (item_type == "Currency" || item_type == "Fragment") {
 			for (const auto& line : json["lines"].GetArray()) {
 
+				std::string item = line["currencyTypeName"].GetString();
 				//don't show low confidence values
-				auto pay_count = line["pay"].HasMember("count") ? line["pay"]["count"].GetFloat() : 0;
-				auto receive_count = line["receive"].HasMember("count") ? line["receive"]["count"].GetFloat() : 0;
+				float pay_count = 0;
+				float receive_count = 0;
+				if (line.HasMember("pay") && !line["pay"].IsNull()) {
+					pay_count = line["pay"].HasMember("count") ? line["pay"]["count"].GetFloat() : 0;
+				}
+				if (line.HasMember("receive") && !line["receive"].IsNull()) {
+					receive_count = line["receive"].HasMember("count") ? line["receive"]["count"].GetFloat() : 0;
+				}
+				//if pay and recieve are not both below 5
 				if ((pay_count < 5) != (receive_count < 5)) {
 					if (pay_count < 5) {
-						price_info[line["currencyTypeName"].GetString()] = line["receive"]["value"].GetFloat();
+						if (!line["receive"].IsNull()) {
+							price_info[item] = line["receive"]["value"].GetFloat();
+						}
+						else {
+							price_info[item] = line["chaosEquivalent"].GetFloat();
+						}
 					}
 					else{
-						price_info[line["currencyTypeName"].GetString()] = line["pay"]["value"].GetFloat();
+						if (!line["pay"].IsNull()) {
+							price_info[item] = line["pay"]["value"].GetFloat();
+						}
+						else {
+							price_info[item] = line["chaosEquivalent"].GetFloat();
+						}
 					}
 
 				}
 				else {
-					price_info[line["currencyTypeName"].GetString()] = line["chaosEquivalent"].GetFloat();
+					price_info[item] = line["chaosEquivalent"].GetFloat();
 				}
 			}
 		}
