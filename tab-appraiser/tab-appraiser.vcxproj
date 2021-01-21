@@ -103,13 +103,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)vendor\GLAD\include;$(ProjectDir)vendor\GLFW\include;$(ProjectDir)vendor\nlohmann;$(ProjectDir)vendor\imgui;$(ProjectDir)vendor\rapidjson\include;$(ProjectDir)vendor\GLAD\include$(ProjectDir)vendor\curl-7.68.0\x64 Debug\include;%(AdditionalIncludeDirectories);$(ProjectDir)dependencies\GLFW\include;$(ProjectDir)dependencies\nlohmann;$(ProjectDir)dependencies\imgui;$(ProjectDir)dependencies\GLAD\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)vendor\GLAD\include;$(ProjectDir)vendor\GLFW\include;$(ProjectDir)vendor\nlohmann;$(ProjectDir)vendor\imgui;$(ProjectDir)vendor\rapidjson\include;%(AdditionalIncludeDirectories);$(ProjectDir)dependencies\GLFW\include;$(ProjectDir)dependencies\nlohmann;$(ProjectDir)dependencies\imgui;$(ProjectDir)vendor\curl-7.68.0\x64 Debug\include;$(ProjectDir)dependencies\GLAD\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(ProjectDir)vendor\curl-7.68.0\x64 Debug\lib\libcurl_a_debug.lib;Normaliz.lib;Ws2_32.lib;Wldap32.lib;Crypt32.lib;advapi32.lib;%(AdditionalDependencies);glfw3.lib;opengl32.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(ProjectDir)vendor\curl-7.68.0\x64 Debug\lib\libcurl_a_debug.lib;$(ProjectDir)vendor\GLFW\lib-vc2019\glfw3.lib;Normaliz.lib;Ws2_32.lib;Wldap32.lib;Crypt32.lib;advapi32.lib;%(AdditionalDependencies);opengl32.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
